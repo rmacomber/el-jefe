@@ -1,0 +1,2 @@
+tools/search_web.py, write_md.py, manage_files.py
+Provide simple async wrappers or use Claude’s built-in tool wrappers based on SDK docs for web search, markdown file writing, and file management. For a personal setup, you can also wrap native Python tools.
