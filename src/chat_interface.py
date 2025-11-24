@@ -12,16 +12,36 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+# Import each module individually to handle partial failures
+Orchestrator = None
+StreamingOrchestrator = None
+UserInterface = None
+ProgressMonitor = None
+CLIInput = None
+
 try:
-    from .orchestrator import Orchestrator
-    from .streaming_orchestrator import StreamingOrchestrator
-    from .user_interface import UserInterface
-    from .monitoring import ProgressMonitor
+    from cli_input import CLIInput
 except ImportError:
-    # Fallback for testing
+    CLIInput = None
+
+try:
+    from orchestrator import Orchestrator
+except ImportError:
     Orchestrator = None
+
+try:
+    from streaming_orchestrator import StreamingOrchestrator
+except ImportError:
     StreamingOrchestrator = None
+
+try:
+    from user_interface import UserInterface
+except ImportError:
     UserInterface = None
+
+try:
+    from monitoring import ProgressMonitor
+except ImportError:
     ProgressMonitor = None
 
 
@@ -46,6 +66,12 @@ class ChatInterface:
             active_workflows={},
             context={}
         )
+
+        # Initialize enhanced CLI input system
+        if CLIInput is not None:
+            self.cli_input = CLIInput()
+        else:
+            self.cli_input = None
 
         # Initialize streaming orchestrator and monitoring if available
         if StreamingOrchestrator is not None:
@@ -144,9 +170,14 @@ Or just tell me what you'd like to accomplish, and I'll help you plan it!
 """)
 
     async def get_user_input(self) -> str:
-        """Get user input with a prompt."""
+        """Get user input with enhanced CLI features."""
         try:
-            return input("\n💬 El Jefe> ")
+            if self.cli_input is not None:
+                # Use enhanced CLI input with history and auto-completion
+                return await self.cli_input.get_enhanced_input()
+            else:
+                # Fallback to basic input
+                return input("\n💬 El Jefe> ")
         except EOFError:
             return "/exit"
 
