@@ -116,6 +116,13 @@ Examples:
         help="Add a scheduled workflow: --schedule-add 'name' 'description' 'goal' 'daily'"
     )
 
+    # Dashboard commands
+    parser.add_argument(
+        "--dashboard", "-d",
+        action="store_true",
+        help="Start the monitoring dashboard"
+    )
+
     # Special case: no arguments - launch interactive chat mode
     if len(sys.argv) == 1:
         if ChatInterface is not None:
@@ -150,6 +157,8 @@ Examples:
             await start_scheduler_daemon(args.workspace_dir)
         elif args.schedule_add:
             await add_scheduled_workflow(args.workspace_dir, *args.schedule_add)
+        elif args.dashboard:
+            await start_dashboard()
         elif args.goal:
             await execute_goal(orchestrator, ui, args.goal)
         else:
@@ -358,6 +367,47 @@ async def add_scheduled_workflow(workspace_dir: str, name: str, description: str
 
     except Exception as e:
         print(f"❌ Error scheduling workflow: {e}")
+        return 1
+
+
+async def start_dashboard():
+    """Start the monitoring dashboard."""
+    try:
+        # Import here to avoid circular imports
+        from monitoring_dashboard import MonitoringDashboard
+
+        print("🚀 Starting El Jefe Monitoring Dashboard...")
+        print("=" * 50)
+
+        dashboard = MonitoringDashboard()
+        runner = await dashboard.start()
+
+        print("📊 Dashboard started successfully!")
+        print("🌐 Web Interface: http://localhost:8080")
+        print("📡 WebSocket API: ws://localhost:8080/ws")
+        print("🔌 REST API: http://localhost:8080/api/")
+        print("\n💡 Keep this terminal open to maintain the dashboard")
+        print("💻 Open http://localhost:8080 in your browser to view")
+        print("⏹️ Press Ctrl+C to stop the dashboard")
+
+        try:
+            # Keep the dashboard running
+            while True:
+                await asyncio.sleep(1)
+        except KeyboardInterrupt:
+            print("\n⏹️ Stopping monitoring dashboard...")
+            await dashboard.stop()
+            await runner.cleanup()
+            print("✅ Dashboard stopped successfully")
+
+        return 0
+
+    except ImportError:
+        print("❌ Dashboard dependencies not found")
+        print("💡 Install with: pip install websockets aiohttp-cors")
+        return 1
+    except Exception as e:
+        print(f"❌ Error starting dashboard: {e}")
         return 1
 
 

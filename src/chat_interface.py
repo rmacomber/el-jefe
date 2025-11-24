@@ -22,27 +22,46 @@ CLIInput = None
 try:
     from cli_input import CLIInput
 except ImportError:
-    CLIInput = None
+    try:
+        from src.cli_input import CLIInput
+    except ImportError:
+        CLIInput = None
 
 try:
     from orchestrator import Orchestrator
 except ImportError:
-    Orchestrator = None
+    # Try importing from current directory (for subprocess execution)
+    try:
+        from src.orchestrator import Orchestrator
+    except ImportError:
+        Orchestrator = None
 
 try:
     from streaming_orchestrator import StreamingOrchestrator
 except ImportError:
-    StreamingOrchestrator = None
+    try:
+        from src.streaming_orchestrator import StreamingOrchestrator
+    except ImportError:
+        StreamingOrchestrator = None
 
 try:
     from user_interface import UserInterface
 except ImportError:
-    UserInterface = None
+    try:
+        from src.user_interface import UserInterface
+    except ImportError:
+        UserInterface = None
 
 try:
     from monitoring import ProgressMonitor
 except ImportError:
-    ProgressMonitor = None
+    try:
+        from src.monitoring import ProgressMonitor
+    except ImportError:
+        ProgressMonitor = None
+
+# Import for dashboard launcher
+import sys
 
 
 @dataclass
@@ -122,6 +141,7 @@ class ChatInterface:
             '/metrics': self.cmd_metrics,
             '/mode': self.cmd_mode,
             '/clear': self.cmd_clear,
+            '/dashboard': self.cmd_dashboard,
             '/exit': self.cmd_exit,
             '/quit': self.cmd_exit
         }
@@ -229,6 +249,7 @@ Or just tell me what you'd like to accomplish, and I'll help you plan it!
   /mode                   - Toggle between streaming and legacy mode
   /workspaces             - List recent workspaces
   /clear                  - Clear conversation history
+  /dashboard              - Launch the monitoring dashboard
 
 💬 Chat Commands:
   /help                   - Show this help message
@@ -239,6 +260,7 @@ Or just tell me what you'd like to accomplish, and I'll help you plan it!
   /start-streaming "Build a Python API for data analysis"
   /status
   /monitor
+  /dashboard
   /mode
         """)
 
@@ -543,6 +565,42 @@ Use /start to launch workflows that coordinate these agents automatically!
             current_mode = "Streaming" if self.streaming_mode else "Legacy"
             await self.show_message(f"📊 Current Mode: {current_mode}")
             await self.show_message("Use /mode streaming or /mode legacy to switch")
+
+    async def cmd_dashboard(self, args: List[str]) -> None:
+        """Launch the monitoring dashboard."""
+        await self.show_message("🚀 Starting monitoring dashboard...")
+        await self.show_message("🌐 Dashboard will be available at: http://localhost:8080")
+        await self.show_message("💡 Keep this terminal open - the dashboard runs in a separate process")
+
+        try:
+            # Import subprocess for launching dashboard
+            import subprocess
+            import os
+
+            # Path to the dashboard script
+            dashboard_script = os.path.join(os.path.dirname(__file__), "..", "monitoring_dashboard.py")
+
+            # Launch dashboard in background
+            with open(os.devnull, 'w') as devnull:
+                process = subprocess.Popen(
+                    [sys.executable, dashboard_script],
+                    stdout=devnull,
+                    stderr=devnull,
+                    start_new_session=True
+                )
+
+            # Give it a moment to start
+            await asyncio.sleep(2)
+
+            await self.show_message("✅ Dashboard started successfully!")
+            await self.show_message("💻 Open http://localhost:8080 in your browser to view")
+            await self.show_message("⏹️ The dashboard will continue running in the background")
+            await self.show_message("🛑 To stop it later, you can run: pkill -f monitoring_dashboard.py")
+
+        except Exception as e:
+            await self.show_error(f"❌ Failed to start dashboard: {e}")
+            await self.show_message("💡 You can also start it manually with: python3 monitoring_dashboard.py")
+            await self.show_message("💡 Or use the CLI: python3 main.py --dashboard")
 
     async def cmd_exit(self, args: List[str]) -> None:
         """Exit chat mode."""

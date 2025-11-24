@@ -19,11 +19,16 @@ def main():
     """Main function that calls main.py as a subprocess."""
     # Build the command to run main.py with full path
     main_py_path = PROJECT_DIR / "main.py"
+
+    # Set environment variables to ensure proper Python path
+    env = os.environ.copy()
+    env['PYTHONPATH'] = str(PROJECT_DIR)
+
     cmd = [sys.executable, str(main_py_path)] + sys.argv[1:]
 
     # Run main.py and pass through the exit code
     try:
-        result = subprocess.run(cmd, cwd=str(PROJECT_DIR))
+        result = subprocess.run(cmd, cwd=str(PROJECT_DIR), env=env)
         return result.returncode
     except KeyboardInterrupt:
         print("\nOperation cancelled by user")

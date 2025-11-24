@@ -18,6 +18,13 @@ from .agent_manager import AgentManager, AgentType
 from .task_planner import TaskPlanner
 from .user_interface import UserInterface
 
+# Import shared monitoring state for dashboard integration
+try:
+    from .shared_monitoring_state import add_agent_job, add_workflow_session, get_shared_monitoring_state
+    MONITORING_AVAILABLE = True
+except ImportError:
+    MONITORING_AVAILABLE = False
+
 
 class Orchestrator:
     """
@@ -85,6 +92,24 @@ class Orchestrator:
                 "status": "running"
             }
 
+            # Register workflow with monitoring dashboard
+            if MONITORING_AVAILABLE:
+                workflow_id = f"workflow_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                session_data = {
+                    "session_id": workflow_id,
+                    "goal": goal,
+                    "status": "running",
+                    "started_at": datetime.now().isoformat(),
+                    "total_steps": len(task_plan['steps']),
+                    "completed_steps": 0,
+                    "current_step": 0,
+                    "agents_used": [],
+                    "workspace": str(self.current_workspace),
+                    "metrics": {}
+                }
+                add_workflow_session(session_data)
+                self.workflow_state["monitoring_id"] = workflow_id
+
             # Step 4: Execute workflow steps
             for i, step in enumerate(task_plan["steps"]):
                 self.workflow_state["current_step"] = i
@@ -98,10 +123,39 @@ class Orchestrator:
                         print("❌ Step cancelled by user")
                         continue
 
+                # Register step with monitoring dashboard
+                if MONITORING_AVAILABLE and "monitoring_id" in self.workflow_state:
+                    job_id = f"{self.workflow_state['monitoring_id']}_step_{i+1}"
+                    job_data = {
+                        "job_id": job_id,
+                        "agent_type": step["agent_type"],
+                        "task": step["task"],
+                        "status": "running",
+                        "started_at": datetime.now().isoformat(),
+                        "progress": 0.0,
+                        "current_step": "Starting...",
+                        "workspace": str(self.current_workspace),
+                        "tokens_used": 0,
+                        "words_generated": 0
+                    }
+                    add_agent_job(job_data)
+
                 # Execute the step
                 step_result = await self._execute_workflow_step(step)
                 results.append(step_result)
                 self.workflow_state["steps_completed"].append(step_result)
+
+                # Update monitoring dashboard with step completion
+                if MONITORING_AVAILABLE and "monitoring_id" in self.workflow_state:
+                    completion_data = {
+                        "job_id": job_id,
+                        "status": "completed" if step_result.get("status") == "completed" else "failed",
+                        "completed_at": datetime.now().isoformat(),
+                        "progress": 1.0,
+                        "tokens_used": step_result.get("tokens_used", 0),
+                        "words_generated": step_result.get("words_generated", 0)
+                    }
+                    add_agent_job(completion_data)
 
                 # Update workspace context
                 await self._update_workspace_context(step_result)
@@ -117,6 +171,23 @@ class Orchestrator:
                 "summary": summary
             })
 
+            # Notify monitoring dashboard of workflow completion
+            if MONITORING_AVAILABLE and "monitoring_id" in self.workflow_state:
+                completion_data = {
+                    "session_id": self.workflow_state["monitoring_id"],
+                    "status": "completed",
+                    "completed_at": datetime.now().isoformat(),
+                    "total_steps": len(results),
+                    "completed_steps": len(results),
+                    "current_step": len(results),
+                    "workspace": str(self.current_workspace),
+                    "metrics": {
+                        "total_agents": len(set(step.get("agent_type", "unknown") for step in task_plan["steps"])),
+                        "summary": summary
+                    }
+                }
+                add_workflow_session(completion_data)
+
             print(f"\n✅ Goal completed! Workspace: {self.current_workspace}")
             print(f"📊 Executed {len(results)} steps")
 
@@ -131,6 +202,23 @@ class Orchestrator:
                 "error": str(e),
                 "total_steps": len(results)
             })
+
+            # Notify monitoring dashboard of workflow failure
+            if MONITORING_AVAILABLE and "monitoring_id" in self.workflow_state:
+                failure_data = {
+                    "session_id": self.workflow_state["monitoring_id"],
+                    "status": "failed",
+                    "completed_at": datetime.now().isoformat(),
+                    "total_steps": len(results),
+                    "completed_steps": len(results),
+                    "current_step": self.workflow_state.get("current_step", 0),
+                    "workspace": str(self.current_workspace) if self.current_workspace else "",
+                    "metrics": {
+                        "error": str(e),
+                        "summary": "Workflow failed due to an error"
+                    }
+                }
+                add_workflow_session(failure_data)
 
             print(f"\n❌ Error during execution: {e}")
             raise

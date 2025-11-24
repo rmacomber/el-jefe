@@ -15,6 +15,13 @@ import aiofiles
 
 from claude_agent_sdk import query, ClaudeAgentOptions
 
+# Import MCP tools for agent enhancement
+try:
+    from .mcp_integration import get_mcp_integration
+    MCP_TOOLS_AVAILABLE = True
+except ImportError:
+    MCP_TOOLS_AVAILABLE = False
+
 
 class AgentType(Enum):
     """Enumeration of available agent types."""
@@ -97,6 +104,51 @@ class AgentConfig:
         }
     }
 
+    @classmethod
+    def get_enhanced_config(cls, agent_type: AgentType) -> Dict[str, Any]:
+        """
+        Get enhanced agent configuration including MCP tools if available.
+
+        Args:
+            agent_type: The type of agent
+
+        Returns:
+            Enhanced configuration dictionary
+        """
+        # Get base configuration
+        config = cls.AGENT_CONFIGS[agent_type].copy()
+
+        # Add MCP tools if available
+        if MCP_TOOLS_AVAILABLE:
+            try:
+                mcp_integration = get_mcp_integration()
+                mcp_tools = mcp_integration.get_available_tools()
+
+                if mcp_tools:
+                    # Add MCP tools to allowed_tools
+                    base_tools = config.get("allowed_tools", [])
+                    enhanced_tools = list(set(base_tools + mcp_tools))
+                    config["allowed_tools"] = enhanced_tools
+
+                    # Update system prompt to mention MCP capabilities
+                    mcp_prompt = "\n\nYou also have access to powerful MCP (Model Context Protocol) tools:\n"
+                    mcp_prompt += "- memory_create_entity: Create entities in a knowledge graph\n"
+                    mcp_prompt += "- memory_create_relation: Create relations between entities\n"
+                    mcp_prompt += "- memory_search: Search the knowledge graph\n"
+                    mcp_prompt += "- memory_add_observations: Add observations to entities\n"
+                    mcp_prompt += "- context7_resolve_library: Find library documentation\n"
+                    mcp_prompt += "- context7_get_docs: Get up-to-date library documentation\n"
+                    mcp_prompt += "\nUse these tools when relevant to enhance your capabilities and provide better results."
+
+                    config["system_prompt"] += mcp_prompt
+
+                    print(f"🔧 Enhanced {agent_type.value} agent with {len(mcp_tools)} MCP tools")
+
+            except Exception as e:
+                print(f"⚠️  Failed to enhance {agent_type.value} agent with MCP tools: {e}")
+
+        return config
+
 
 class AgentManager:
     """Manages spawning and coordinating specialist agents."""
@@ -134,8 +186,8 @@ class AgentManager:
         Returns:
             Dictionary containing agent execution results
         """
-        # Get agent configuration
-        config = AgentConfig.AGENT_CONFIGS[agent_type]
+        # Get enhanced agent configuration with MCP tools
+        config = AgentConfig.get_enhanced_config(agent_type)
 
         # Generate agent ID
         agent_id = f"{agent_type.value}_{datetime.now().strftime('%H%M%S')}"

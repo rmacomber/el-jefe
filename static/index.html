@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Jefe - Agent Monitoring Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+
+        .connections {
+            background: #27ae60;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9em;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .connections.disconnected {
+            background: #e74c3c;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .metric-value {
+            font-size: 3em;
+            font-weight: 700;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 1.1em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-running {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        .status-completed {
+            color: #3498db;
+            font-weight: 600;
+        }
+
+        .status-failed {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .status-paused {
+            color: #f39c12;
+            font-weight: 600;
+        }
+
+        .agent-item, .workflow-item {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .agent-item:hover, .workflow-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .agent-item.running {
+            border-left-color: #27ae60;
+        }
+
+        .agent-item.completed {
+            border-left-color: #3498db;
+        }
+
+        .agent-item.failed {
+            border-left-color: #e74c3c;
+        }
+
+        .workflow-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .workflow-title {
+            font-weight: 600;
+            font-size: 1.1em;
+            color: #2c3e50;
+        }
+
+        .progress-bar {
+            background: #ecf0f1;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .workflow-meta {
+            display: flex;
+            gap: 20px;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .system-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .status-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .status-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            color: #7f8c8d;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-left: 10px;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .updating {
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 El Jefe Agent Monitoring Dashboard</h1>
+            <div>
+                <div class="connections" id="connections">🟢 Connected</div>
+                <button class="refresh-btn" onclick="refreshAllData()">🔄 Refresh</button>
+            </div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric-card">
+                <div class="metric-value" id="active-agents">0</div>
+                <div class="metric-label">Active Agents</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="active-workflows">0</div>
+                <div class="metric-label">Active Workflows</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="completed-jobs">0</div>
+                <div class="metric-label">Completed Jobs</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="total-tokens">0</div>
+                <div class="metric-label">Total Tokens</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🤖 Active Agents</h2>
+            <div id="agents-list" class="loading">Loading agent data...</div>
+        </div>
+
+        <div class="card">
+            <h2>📋 Workflow Sessions</h2>
+            <div id="workflows-list" class="loading">Loading workflow data...</div>
+        </div>
+
+        <div class="card">
+            <h2>📊 System Status</h2>
+            <div id="system-status" class="loading">Loading system status...</div>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        let isUpdating = false;
+
+        function connectWebSocket() {
+            ws = new WebSocket('ws://localhost:8080/ws');
+            const connectionsEl = document.getElementById('connections');
+
+            ws.onopen = function() {
+                console.log('WebSocket connected');
+                connectionsEl.textContent = '🟢 Connected';
+                connectionsEl.className = 'connections';
+                reconnectAttempts = 0;
+
+                // Request initial data
+                ws.send(JSON.stringify({ type: 'refresh' }));
+            };
+
+            ws.onclose = function() {
+                console.log('WebSocket disconnected');
+                connectionsEl.textContent = '🔴 Disconnected';
+                connectionsEl.className = 'connections disconnected';
+
+                // Try to reconnect
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    setTimeout(() => {
+                        console.log(`Reconnection attempt ${reconnectAttempts}/${maxReconnectAttempts}`);
+                        connectWebSocket();
+                    }, 5000);
+                } else {
+                    connectionsEl.textContent = '🔴 Connection Failed';
+                }
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                connectionsEl.textContent = '🔴 Error';
+                connectionsEl.className = 'connections disconnected';
+            };
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                handleUpdate(data);
+            };
+        }
+
+        function handleUpdate(data) {
+            console.log('Received update:', data);
+
+            switch(data.type) {
+                case 'agent_update':
+                    updateAgentsList();
+                    updateMetrics();
+                    break;
+                case 'workflow_update':
+                    updateWorkflowsList();
+                    updateMetrics();
+                    break;
+                case 'initial_data':
+                    updateAllData();
+                    break;
+                case 'workflow_interrupted':
+                    showNotification(`Workflow ${data.session_id} ${data.success ? 'interrupted' : 'failed to interrupt'}`);
+                    break;
+                case 'workflow_paused':
+                    showNotification(`Workflow ${data.session_id} paused`);
+                    break;
+                case 'workflow_resumed':
+                    showNotification(`Workflow ${data.session_id} resumed`);
+                    break;
+            }
+        }
+
+        function updateAllData() {
+            if (isUpdating) return;
+            isUpdating = true;
+
+            Promise.all([
+                updateMetrics(),
+                updateAgentsList(),
+                updateWorkflowsList(),
+                updateSystemStatus()
+            ]).finally(() => {
+                isUpdating = false;
+            });
+        }
+
+        function refreshAllData() {
+            if (isUpdating) return;
+
+            document.querySelectorAll('.loading').forEach(el => {
+                el.classList.add('updating');
+            });
+
+            updateAllData().finally(() => {
+                setTimeout(() => {
+                    document.querySelectorAll('.updating').forEach(el => {
+                        el.classList.remove('updating');
+                    });
+                }, 1000);
+            });
+        }
+
+        async function updateMetrics() {
+            try {
+                const [statusRes, metricsRes] = await Promise.all([
+                    fetch('/api/status'),
+                    fetch('/api/metrics')
+                ]);
+
+                const status = await statusRes.json();
+                const metrics = await metricsRes.json();
+
+                document.getElementById('active-agents').textContent = status.system.active_agents;
+                document.getElementById('active-workflows').textContent = status.system.active_workflows;
+                document.getElementById('completed-jobs').textContent = metrics.completed_jobs;
+                document.getElementById('total-tokens').textContent = formatNumber(metrics.total_tokens);
+            } catch (error) {
+                console.error('Error updating metrics:', error);
+            }
+        }
+
+        async function updateAgentsList() {
+            try {
+                const response = await fetch('/api/agents');
+                const agents = await response.json();
+                const agentsArray = Object.values(agents);
+                const listEl = document.getElementById('agents-list');
+
+                if (agentsArray.length === 0) {
+                    listEl.innerHTML = '<div class="empty-state">No active agents</div>';
+                    return;
+                }
+
+                listEl.innerHTML = agentsArray.map(agent => `
+                    <div class="agent-item ${agent.status}">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div>
+                                <strong>${agent.agent_type}</strong>
+                                <span style="margin-left: 10px; color: #7f8c8d; font-size: 0.9em;">${agent.job_id}</span>
+                            </div>
+                            <span class="status-${agent.status}">${agent.status.toUpperCase()}</span>
+                        </div>
+                        <div style="color: #7f8c8d; margin-bottom: 8px;">
+                            <strong>Task:</strong> ${agent.task}
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${agent.progress * 100}%"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9em; color: #7f8c8d;">
+                            <span>Progress: ${Math.round(agent.progress * 100)}%</span>
+                            <span>Tokens: ${formatNumber(agent.tokens_used)}</span>
+                        </div>
+                        ${agent.current_step ? `<div style="margin-top: 8px; font-size: 0.9em; color: #34495e;"><em>Current: ${agent.current_step}</em></div>` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('agents-list').innerHTML = '<div class="empty-state">Error loading agent data</div>';
+                console.error('Error updating agents:', error);
+            }
+        }
+
+        async function updateWorkflowsList() {
+            try {
+                const response = await fetch('/api/workflows');
+                const workflows = await response.json();
+                const workflowsArray = Object.values(workflows);
+                const listEl = document.getElementById('workflows-list');
+
+                if (workflowsArray.length === 0) {
+                    listEl.innerHTML = '<div class="empty-state">No active workflows</div>';
+                    return;
+                }
+
+                listEl.innerHTML = workflowsArray.map(workflow => `
+                    <div class="workflow-item">
+                        <div class="workflow-header">
+                            <div class="workflow-title">${workflow.goal}</div>
+                            <span class="status-${workflow.status}">${workflow.status.toUpperCase()}</span>
+                        </div>
+                        <div style="color: #7f8c8d; margin-bottom: 10px;">
+                            <strong>Session:</strong> ${workflow.session_id}
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${workflow.total_steps > 0 ? (workflow.completed_steps / workflow.total_steps) * 100 : 0}%"></div>
+                        </div>
+                        <div class="workflow-meta">
+                            <span>Steps: ${workflow.completed_steps}/${workflow.total_steps}</span>
+                            <span>Started: ${formatTime(workflow.started_at)}</span>
+                            <span>Workspace: ${workflow.workspace || 'N/A'}</span>
+                        </div>
+                        ${workflow.agents_used.length > 0 ? `
+                            <div style="margin-top: 10px; font-size: 0.9em;">
+                                <strong>Agents:</strong> ${workflow.agents_used.join(', ')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('workflows-list').innerHTML = '<div class="empty-state">Error loading workflow data</div>';
+                console.error('Error updating workflows:', error);
+            }
+        }
+
+        async function updateSystemStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                const statusEl = document.getElementById('system-status');
+
+                statusEl.innerHTML = `
+                    <div class="system-status">
+                        <div class="status-item">
+                            <div class="status-label">System Status</div>
+                            <div class="status-value">${data.system.status}</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Connected Clients</div>
+                            <div class="status-value">${data.system.connected_clients}</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Uptime</div>
+                            <div class="status-value">${data.system.uptime}</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Last Update</div>
+                            <div class="status-value">${new Date().toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('system-status').innerHTML = '<div class="empty-state">Error loading system status</div>';
+                console.error('Error updating system status:', error);
+            }
+        }
+
+        function formatNumber(num) {
+            return num.toLocaleString();
+        }
+
+        function formatTime(timestamp) {
+            return new Date(timestamp).toLocaleString();
+        }
+
+        function showNotification(message) {
+            // Simple notification - you could enhance this with a toast library
+            console.log('Notification:', message);
+        }
+
+        // Initialize WebSocket connection
+        connectWebSocket();
+
+        // Initial data load with a small delay to ensure WebSocket is ready
+        setTimeout(() => {
+            refreshAllData();
+        }, 2000);
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            if (!isUpdating && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'refresh' }));
+            }
+        }, 30000);
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && ws && ws.readyState !== WebSocket.OPEN) {
+                connectWebSocket();
+            }
+        });
+    </script>
+</body>
+</html>
