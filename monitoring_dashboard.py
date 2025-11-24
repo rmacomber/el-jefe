@@ -9,6 +9,10 @@ Runs as a web server with WebSocket support for live updates.
 import asyncio
 import json
 import logging
+import subprocess
+import signal
+import sys
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -76,6 +80,16 @@ class WorkflowSession:
             self.metrics = {}
 
 
+@dataclass
+class ChatMessage:
+    """Represents a chat message in the dashboard."""
+    message_id: str
+    sender: str  # "user" or "el-jefe"
+    content: str
+    timestamp: str
+    message_type: str = "text"  # "text", "status", "error", "system"
+
+
 class MonitoringDashboard:
     """Main monitoring dashboard server."""
 
@@ -86,6 +100,11 @@ class MonitoringDashboard:
         self.clients = set()
         self.agent_jobs: Dict[str, AgentJob] = {}
         self.workflow_sessions: Dict[str, WorkflowSession] = {}
+
+        # Chat functionality
+        self.chat_messages: List[ChatMessage] = []
+        self.el_jefe_process = None
+        self.chat_active = False
 
         # Initialize monitoring components
         self.orchestrator = None
@@ -127,6 +146,7 @@ class MonitoringDashboard:
         self.app.router.add_get('/api/workflows', self.get_workflows)
         self.app.router.add_get('/api/metrics', self.get_metrics)
         self.app.router.add_get('/api/history', self.get_history)
+        self.app.router.add_get('/api/chat/history', self.get_chat_history)
 
         # Serve static files
         self.app.router.add_get('/', self.serve_index)
@@ -256,6 +276,12 @@ class MonitoringDashboard:
         elif message_type == "resume_workflow":
             session_id = data.get("session_id")
             await self.resume_workflow(session_id)
+        elif message_type == "chat_message":
+            await self.handle_chat_message(ws, data.get("message", ""))
+        elif message_type == "start_el_jefe":
+            await self.start_el_jefe()
+        elif message_type == "stop_el_jefe":
+            await self.stop_el_jefe()
 
     async def send_to_client(self, ws, data):
         """Send data to a specific WebSocket client."""
@@ -409,6 +435,12 @@ class MonitoringDashboard:
 
     async def serve_index(self, request):
         """Serve the main dashboard HTML page."""
+        # Try to serve the enhanced v2 dashboard first
+        v2_html_path = Path(__file__).parent / "static" / "dashboard-v2.html"
+        if v2_html_path.exists():
+            return web.FileResponse(v2_html_path)
+
+        # Fallback to original dashboard
         html_path = Path(__file__).parent / "static" / "index.html"
         if html_path.exists():
             return web.FileResponse(html_path)
@@ -701,6 +733,184 @@ class MonitoringDashboard:
 
         if self.streaming_orchestrator:
             await self.streaming_orchestrator.cleanup()
+
+        # Stop El Jefe process if running
+        await self.stop_el_jefe()
+
+    async def handle_chat_message(self, ws, message: str):
+        """Handle incoming chat messages from users."""
+        if not message.strip():
+            return
+
+        # Create user message
+        user_message = ChatMessage(
+            message_id=f"user_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
+            sender="user",
+            content=message.strip(),
+            timestamp=datetime.now().isoformat(),
+            message_type="text"
+        )
+
+        self.chat_messages.append(user_message)
+
+        # Broadcast user message to all clients
+        await self.broadcast_to_clients({
+            "type": "chat_message",
+            "message": asdict(user_message)
+        })
+
+        # Send to El Jefe if process is running
+        if self.el_jefe_process and self.chat_active:
+            try:
+                # Ensure we're sending bytes to stdin
+                if hasattr(self.el_jefe_process.stdin, 'write'):
+                    message_bytes = (message + "\n").encode('utf-8')
+                    self.el_jefe_process.stdin.write(message_bytes)
+                    await self.el_jefe_process.stdin.drain()
+            except (BrokenPipeError, ConnectionResetError) as e:
+                # Process likely ended, update status
+                self.chat_active = False
+                self.el_jefe_process = None
+
+                error_message = ChatMessage(
+                    message_id=f"error_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
+                    sender="el-jefe",
+                    content="El Jefe process ended unexpectedly. Please restart.",
+                    timestamp=datetime.now().isoformat(),
+                    message_type="error"
+                )
+                self.chat_messages.append(error_message)
+                await self.broadcast_to_clients({
+                    "type": "chat_message",
+                    "message": asdict(error_message)
+                })
+            except Exception as e:
+                error_message = ChatMessage(
+                    message_id=f"error_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
+                    sender="el-jefe",
+                    content=f"Error sending message to El Jefe: {e}",
+                    timestamp=datetime.now().isoformat(),
+                    message_type="error"
+                )
+                self.chat_messages.append(error_message)
+                await self.broadcast_to_clients({
+                    "type": "chat_message",
+                    "message": asdict(error_message)
+                })
+
+    async def start_el_jefe(self):
+        """Start El Jefe process for chat interaction."""
+        if self.el_jefe_process and self.chat_active:
+            return
+
+        try:
+            # Start El Jefe in interactive mode
+            self.el_jefe_process = await asyncio.create_subprocess_exec(
+                'el-jefe',
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,  # Merge stderr with stdout
+                cwd=Path.cwd()
+            )
+
+            self.chat_active = True
+
+            # Start reading El Jefe output
+            asyncio.create_task(self.read_el_jefe_output())
+
+            # Send system message
+            system_message = ChatMessage(
+                message_id=f"system_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
+                sender="el-jefe",
+                content="El Jefe is now ready to chat! 🤖",
+                timestamp=datetime.now().isoformat(),
+                message_type="system"
+            )
+            self.chat_messages.append(system_message)
+            await self.broadcast_to_clients({
+                "type": "chat_message",
+                "message": asdict(system_message)
+            })
+
+        except Exception as e:
+            error_message = ChatMessage(
+                message_id=f"error_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
+                sender="el-jefe",
+                content=f"Failed to start El Jefe: {e}",
+                timestamp=datetime.now().isoformat(),
+                message_type="error"
+            )
+            self.chat_messages.append(error_message)
+            await self.broadcast_to_clients({
+                "type": "chat_message",
+                "message": asdict(error_message)
+            })
+
+    async def stop_el_jefe(self):
+        """Stop El Jefe process."""
+        if self.el_jefe_process:
+            try:
+                self.el_jefe_process.terminate()
+                await self.el_jefe_process.wait()
+                self.chat_active = False
+                self.el_jefe_process = None
+
+                # Send system message
+                system_message = ChatMessage(
+                    message_id=f"system_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
+                    sender="el-jefe",
+                    content="El Jefe has been stopped.",
+                    timestamp=datetime.now().isoformat(),
+                    message_type="system"
+                )
+                self.chat_messages.append(system_message)
+                await self.broadcast_to_clients({
+                    "type": "chat_message",
+                    "message": asdict(system_message)
+                })
+
+            except Exception as e:
+                self.logger.error(f"Error stopping El Jefe: {e}")
+
+    async def read_el_jefe_output(self):
+        """Read output from El Jefe process and broadcast to clients."""
+        while self.chat_active and self.el_jefe_process:
+            try:
+                line = await self.el_jefe_process.stdout.readline()
+                if not line:
+                    # Process ended
+                    self.chat_active = False
+                    break
+
+                # Decode line properly
+                if isinstance(line, bytes):
+                    content = line.decode('utf-8').strip()
+                else:
+                    content = str(line).strip()
+
+                if content:
+                    # Create El Jefe message
+                    el_jefe_message = ChatMessage(
+                        message_id=f"eljefe_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
+                        sender="el-jefe",
+                        content=content,
+                        timestamp=datetime.now().isoformat(),
+                        message_type="text"
+                    )
+
+                    self.chat_messages.append(el_jefe_message)
+                    await self.broadcast_to_clients({
+                        "type": "chat_message",
+                        "message": asdict(el_jefe_message)
+                    })
+
+            except Exception as e:
+                self.logger.error(f"Error reading El Jefe output: {e}")
+                break
+
+    async def get_chat_history(self, request):
+        """Get chat message history."""
+        return web.json_response([asdict(msg) for msg in self.chat_messages])
 
 
 async def main():
