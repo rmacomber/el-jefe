@@ -162,7 +162,8 @@ class AgentManager:
             results = []
             async for message in query(prompt=full_prompt, options=options):
                 for block in getattr(message, 'content', []):
-                    if getattr(block, "type", None) == "text":
+                    # Check if it's a TextBlock and extract text
+                    if hasattr(block, 'text'):
                         results.append(block.text)
 
             # Save results
@@ -267,9 +268,18 @@ class AgentManager:
         """
         history_path = self.workspace_path / "workflow-history.json"
 
-        # Read existing history
-        async with aiofiles.open(history_path, 'r') as f:
-            history = json.loads(await f.read())
+        # Read existing history, create if doesn't exist
+        if history_path.exists():
+            async with aiofiles.open(history_path, 'r') as f:
+                history = json.loads(await f.read())
+        else:
+            # Create initial history structure
+            history = {
+                "workspace_created": datetime.now().isoformat(),
+                "task_name": agent_result["agent_id"],
+                "steps": [],
+                "agents_spawned": []
+            }
 
         # Add agent to spawned list
         history["agents_spawned"].append({
