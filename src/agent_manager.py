@@ -24,6 +24,7 @@ class AgentType(Enum):
     ANALYST = "analyst"
     DESIGNER = "designer"
     QA_TESTER = "qa_tester"
+    MEDIA_CREATOR = "media_creator"
     # Template-based agents
     SECURITY_ANALYST = "security_analyst"
     DATA_SCIENTIST = "data_scientist"
@@ -69,6 +70,12 @@ class AgentConfig:
             "allowed_tools": ["write_md", "test_code", "read_files", "validate_output"],
             "max_turns": 5,
             "description": "Validates and tests deliverables"
+        },
+        AgentType.MEDIA_CREATOR: {
+            "system_prompt": "You are a creative media specialist with expertise in visual content creation. Generate compelling images and videos using advanced AI models. Create visuals that enhance content, engage audiences, and communicate complex ideas effectively. Consider brand consistency, target audience, and content context when creating media.",
+            "allowed_tools": ["generate_image", "generate_video", "save_media", "write_md", "read_files", "web_search_prime", "web_fetch"],
+            "max_turns": 8,
+            "description": "Creates images and videos using AI generation models"
         },
         AgentType.SECURITY_ANALYST: {
             "system_prompt": "You are a Security Analyst specializing in application security, vulnerability assessment, and security best practices. Your core expertise areas include threat assessment, security implementation, compliance standards, and security testing. Always provide specific, actionable security recommendations with code examples when possible.",

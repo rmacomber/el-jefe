@@ -441,7 +441,7 @@ class TaskPlanner:
             WorkflowStep(
                 id="mixed-4",
                 description="Implement or create deliverables",
-                agent_type=AgentType.CODER if "code" in goal.lower() else AgentType.WRITER,
+                agent_type=AgentType.CODER if "code" in goal.lower() else AgentType.MEDIA_CREATOR if "image" in goal.lower() or "video" in goal.lower() or "media" in goal.lower() or "visual" in goal.lower() else AgentType.WRITER,
                 task="Create the main deliverables for the solution",
                 context_files=["requirements_analysis.md", "research_findings.md", "solution_design.md"],
                 output_file="deliverables.md",
