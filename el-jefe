@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+"""
+El Jefe - AI Orchestration Command Line Interface
+
+Usage: el-jefe <goal> [options]
+
+Example: el-jefe "Research AI trends for my podcast"
+"""
+
+import sys
+import os
+import subprocess
+from pathlib import Path
+
+# Get the directory where this script is located
+SCRIPT_DIR = Path(__file__).parent
+
+def main():
+    """Main function that calls main.py as a subprocess."""
+    # Build the command to run main.py with full path
+    main_py_path = SCRIPT_DIR / "main.py"
+    cmd = [sys.executable, str(main_py_path)] + sys.argv[1:]
+
+    # Run main.py and pass through the exit code
+    try:
+        result = subprocess.run(cmd, cwd=str(SCRIPT_DIR))
+        return result.returncode
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user")
+        return 1
+    except Exception as e:
+        print(f"Error running el-jefe: {e}")
+        return 1
+
+# Run the main function
+if __name__ == "__main__":
+    sys.exit(main())

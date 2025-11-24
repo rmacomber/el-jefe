@@ -1,2 +1,40 @@
-claude-agent-sdk
-aiofiles
+# Core Dependencies
+claude-agent-sdk>=1.0.0
+aiofiles>=23.0.0
+aiohttp>=3.8.0
+
+# Optional Dependencies for Enhanced Functionality
+python-dotenv>=1.0.0          # Environment variable management
+pydantic>=2.0.0              # Data validation and settings
+click>=8.1.0                 # CLI support
+rich>=13.0.0                 # Rich text and beautiful formatting
+typer>=0.9.0                 # Modern CLI framework
+
+# Data Analysis (optional)
+pandas>=2.0.0                # Data manipulation
+numpy>=1.24.0                # Numerical computing
+matplotlib>=3.7.0            # Plotting
+seaborn>=0.12.0              # Statistical visualization
+
+# Web Scraping (optional)
+requests>=2.31.0             # HTTP requests
+beautifulsoup4>=4.12.0       # HTML parsing
+lxml>=4.9.0                  # XML/HTML parser
+
+# Documentation (optional)
+jinja2>=3.1.0                # Template rendering
+mkdocs>=1.5.0                # Documentation generation
+mkdocs-material>=9.0.0       # Material theme for docs
+
+# Development Dependencies (optional)
+pytest>=7.4.0                # Testing framework
+pytest-asyncio>=0.21.0       # Async testing support
+pytest-cov>=4.1.0            # Coverage reporting
+black>=23.0.0                # Code formatting
+flake8>=6.0.0                # Linting
+mypy>=1.5.0                  # Type checking
+pre-commit>=3.3.0            # Git hooks
+
+# Security (optional)
+bandit>=1.7.0                # Security linter
+safety>=2.3.0                # Dependency vulnerability scanner
