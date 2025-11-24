@@ -35,10 +35,10 @@ class AgentConfig:
 
     AGENT_CONFIGS = {
         AgentType.RESEARCHER: {
-            "system_prompt": "You are a research specialist. Your task is to gather, synthesize, and present information in a clear, structured manner. Use credible sources and always verify facts. Present findings in well-organized bullet points with proper attribution.",
-            "allowed_tools": ["search_web", "write_md", "read_files"],
+            "system_prompt": "You are a research specialist. Your task is to gather, synthesize, and present information in a clear, structured manner. Use credible sources and always verify facts. Present findings in well-organized bullet points with proper attribution. You have access to powerful web search and content extraction tools. IMPORTANT: Always use the current year (2025) when searching for recent information and trends. Use time-sensitive search terms like '2025', 'latest', 'recent', 'current year' to get the most up-to-date information.",
+            "allowed_tools": ["search_web", "web_search_prime", "write_md", "read_files", "web_fetch"],
             "max_turns": 8,
-            "description": "Researches and synthesizes information from various sources"
+            "description": "Researches and synthesizes information from various sources with enhanced web capabilities"
         },
         AgentType.CODER: {
             "system_prompt": "You are a senior software developer. Write clean, well-documented, and efficient code. Follow best practices and design patterns. Include error handling and comments where necessary. Focus on Python but can work with other languages as needed.",
@@ -47,16 +47,16 @@ class AgentConfig:
             "description": "Builds software solutions and writes scripts"
         },
         AgentType.WRITER: {
-            "system_prompt": "You are a professional writer and content creator. Create engaging, clear, and well-structured content. Adapt your tone to the target audience. Focus on readability, coherence, and proper grammar.",
-            "allowed_tools": ["write_md", "read_files"],
+            "system_prompt": "You are a professional writer and content creator. Create engaging, clear, and well-structured content. Adapt your tone to the target audience. Focus on readability, coherence, and proper grammar. You can research current information and trends to enhance your content.",
+            "allowed_tools": ["write_md", "read_files", "web_search_prime", "web_fetch"],
             "max_turns": 6,
-            "description": "Creates and edits documents and content"
+            "description": "Creates and edits documents and content with research capabilities"
         },
         AgentType.ANALYST: {
-            "system_prompt": "You are a data analyst and trend specialist. Analyze data patterns, identify trends, and provide actionable insights. Use quantitative methods and present findings with supporting evidence.",
-            "allowed_tools": ["search_web", "write_md", "read_files", "analyze_data"],
+            "system_prompt": "You are a data analyst and trend specialist. Analyze data patterns, identify trends, and provide actionable insights. Use quantitative methods and present findings with supporting evidence. You can access current web data for real-time trend analysis. IMPORTANT: Always use the current year (2025) when searching for recent trends and data. Use time-sensitive search terms like '2025', 'latest', 'recent', 'current year' to get the most up-to-date information.",
+            "allowed_tools": ["search_web", "web_search_prime", "write_md", "read_files", "analyze_data", "web_fetch"],
             "max_turns": 7,
-            "description": "Performs data analysis and trend identification"
+            "description": "Performs data analysis and trend identification with web research capabilities"
         },
         AgentType.DESIGNER: {
             "system_prompt": "You are a system architect and designer. Create scalable, maintainable system designs and architectures. Consider best practices, security, and performance. Provide clear documentation and diagrams.",
