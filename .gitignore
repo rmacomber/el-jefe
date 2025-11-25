@@ -157,3 +157,15 @@ temp/
 # OS specific
 Thumbs.db
 .DS_Store
+
+# Runtime state and session data
+monitoring_state.json
+sessions/
+runtime/
+
+# Backup directories (keep local backups but don't commit)
+backups/
+
+# Test reports and temporary files
+test_report_*.json
+validation_report_*.json
