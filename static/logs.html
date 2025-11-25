@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Logs - El Jefe Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: #2d2d2d;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #4CAF50;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-links a {
+            color: #888;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: #444;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .controls {
+            background: #2d2d2d;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            border: 1px solid #444;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            color: #888;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        select, input, button {
+            padding: 0.75rem;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        button.secondary {
+            background: #666;
+        }
+
+        button.secondary:hover {
+            background: #555;
+        }
+
+        button.danger {
+            background: #f44336;
+        }
+
+        button.danger:hover {
+            background: #da190b;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: #2d2d2d;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #444;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .logs-container {
+            background: #2d2d2d;
+            border-radius: 8px;
+            border: 1px solid #444;
+            overflow: hidden;
+        }
+
+        .logs-header {
+            background: #1e1e1e;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logs-content {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #333;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            transition: background 0.2s;
+        }
+
+        .log-entry:hover {
+            background: #333;
+        }
+
+        .log-entry.error {
+            border-left: 4px solid #f44336;
+        }
+
+        .log-entry.warning {
+            border-left: 4px solid #ff9800;
+        }
+
+        .log-entry.info {
+            border-left: 4px solid #2196F3;
+        }
+
+        .log-level {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .log-level.ERROR {
+            background: #f44336;
+            color: white;
+        }
+
+        .log-level.WARNING {
+            background: #ff9800;
+            color: white;
+        }
+
+        .log-level.INFO {
+            background: #2196F3;
+            color: white;
+        }
+
+        .log-level.DEBUG {
+            background: #9E9E9E;
+            color: white;
+        }
+
+        .log-timestamp {
+            color: #888;
+            font-size: 0.85rem;
+            font-family: monospace;
+            min-width: 180px;
+        }
+
+        .log-category {
+            background: #444;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .log-message {
+            flex: 1;
+            word-wrap: break-word;
+        }
+
+        .log-details {
+            background: #1a1a1a;
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #888;
+            display: none;
+        }
+
+        .log-entry.expanded .log-details {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #888;
+        }
+
+        .error {
+            background: #f44336;
+            color: white;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+        }
+
+        .modal-content {
+            background: #2d2d2d;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .log-entry {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 System Logs</h1>
+        <div class="nav-links">
+            <a href="/">Dashboard</a>
+            <a href="/logs" class="active">Logs</a>
+            <a href="#" onclick="showDebugInfo()">Debug</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="error" id="error-message" style="display: none;"></div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <label>Log Level</label>
+                <select id="level-filter">
+                    <option value="">All Levels</option>
+                    <option value="ERROR">ERROR</option>
+                    <option value="WARNING">WARNING</option>
+                    <option value="INFO">INFO</option>
+                    <option value="DEBUG">DEBUG</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Category</label>
+                <select id="category-filter">
+                    <option value="">All Categories</option>
+                    <option value="system">System</option>
+                    <option value="agent">Agent</option>
+                    <option value="workflow">Workflow</option>
+                    <option value="api">API</option>
+                    <option value="chat">Chat</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Limit</label>
+                <select id="limit-filter">
+                    <option value="50">50 entries</option>
+                    <option value="100" selected>100 entries</option>
+                    <option value="200">200 entries</option>
+                    <option value="500">500 entries</option>
+                </select>
+            </div>
+
+            <button onclick="refreshLogs()">🔄 Refresh</button>
+            <button onclick="toggleAutoRefresh()" id="auto-refresh-btn">🔴 Auto Refresh</button>
+            <button onclick="clearLogs()" class="danger">🗑️ Clear Old Logs</button>
+            <button onclick="exportLogs('json')" class="secondary">📥 Export JSON</button>
+            <button onclick="exportLogs('csv')" class="secondary">📥 Export CSV</button>
+            <button onclick="exportLogs('txt')" class="secondary">📥 Export TXT</button>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="total-logs">-</div>
+                <div class="stat-label">Total Logs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="error-count" style="color: #f44336;">-</div>
+                <div class="stat-label">Errors</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="warning-count" style="color: #ff9800;">-</div>
+                <div class="stat-label">Warnings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="recent-errors" style="color: #ff5722;">-</div>
+                <div class="stat-label">Recent Errors (last 10)</div>
+            </div>
+        </div>
+
+        <!-- Logs Display -->
+        <div class="logs-container">
+            <div class="logs-header">
+                <div>System Logs</div>
+                <div id="log-status">Loading...</div>
+            </div>
+            <div class="logs-content" id="logs-content">
+                <div class="loading">Loading logs...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Info Modal -->
+    <div id="debug-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDebugModal()">&times;</span>
+            <h2>🔍 Debug Information</h2>
+            <div id="debug-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let autoRefresh = false;
+        let refreshInterval;
+        let ws;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            connectWebSocket();
+            loadLogs();
+
+            // Set up event listeners
+            document.getElementById('level-filter').addEventListener('change', loadLogs);
+            document.getElementById('category-filter').addEventListener('change', loadLogs);
+            document.getElementById('limit-filter').addEventListener('change', loadLogs);
+        });
+
+        // WebSocket connection for real-time updates
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = function() {
+                console.log('Connected to WebSocket');
+            };
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.type === 'log_entry') {
+                    // Add new log entry to the top if filters allow it
+                    addLogEntry(data.log, true);
+                }
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                document.getElementById('log-status').textContent = 'WebSocket connection error';
+            };
+
+            ws.onclose = function() {
+                console.log('WebSocket connection closed');
+                document.getElementById('log-status').textContent = 'Disconnected';
+                // Try to reconnect after 5 seconds
+                setTimeout(connectWebSocket, 5000);
+            };
+        }
+
+        // Load logs from API
+        async function loadLogs() {
+            try {
+                const level = document.getElementById('level-filter').value;
+                const category = document.getElementById('category-filter').value;
+                const limit = document.getElementById('limit-filter').value;
+
+                let url = `/api/logs?limit=${limit}`;
+                if (level) url += `&level=${level}`;
+                if (category) url += `&category=${category}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayLogs(data.logs, data.summary);
+                    document.getElementById('log-status').textContent = `Loaded ${data.logs.length} logs`;
+                } else {
+                    throw new Error(data.error || 'Failed to load logs');
+                }
+            } catch (error) {
+                showError('Error loading logs: ' + error.message);
+                document.getElementById('log-status').textContent = 'Error loading logs';
+            }
+        }
+
+        // Display logs in the interface
+        function displayLogs(logs, summary) {
+            const logsContent = document.getElementById('logs-content');
+
+            // Update statistics
+            updateStats(summary);
+
+            if (logs.length === 0) {
+                logsContent.innerHTML = '<div class="loading">No logs found for current filters</div>';
+                return;
+            }
+
+            logsContent.innerHTML = logs.map(log => createLogEntryHTML(log)).join('');
+        }
+
+        // Create HTML for a single log entry
+        function createLogEntryHTML(log) {
+            const timestamp = new Date(log.timestamp).toLocaleString();
+            const detailsHtml = log.details && Object.keys(log.details).length > 0
+                ? `<div class="log-details">${JSON.stringify(log.details, null, 2)}</div>`
+                : '';
+
+            return `
+                <div class="log-entry ${log.level.toLowerCase()}" onclick="toggleLogDetails(this)">
+                    <div class="log-level ${log.level}">${log.level}</div>
+                    <div class="log-timestamp">${timestamp}</div>
+                    <div class="log-category">${log.category}</div>
+                    <div class="log-message">${escapeHtml(log.message)}</div>
+                    ${detailsHtml}
+                </div>
+            `;
+        }
+
+        // Add a single log entry (for real-time updates)
+        function addLogEntry(log, prepend = false) {
+            const levelFilter = document.getElementById('level-filter').value;
+            const categoryFilter = document.getElementById('category-filter').value;
+
+            // Apply filters
+            if (levelFilter && log.level !== levelFilter.toUpperCase()) return;
+            if (categoryFilter && log.category !== categoryFilter) return;
+
+            const logsContent = document.getElementById('logs-content');
+            const logHtml = createLogEntryHTML(log);
+
+            if (prepend) {
+                logsContent.insertAdjacentHTML('afterbegin', logHtml);
+            } else {
+                logsContent.insertAdjacentHTML('beforeend', logHtml);
+            }
+
+            // Limit visible logs
+            const limit = parseInt(document.getElementById('limit-filter').value);
+            const entries = logsContent.querySelectorAll('.log-entry');
+            if (entries.length > limit) {
+                for (let i = limit; i < entries.length; i++) {
+                    entries[i].remove();
+                }
+            }
+        }
+
+        // Update statistics display
+        function updateStats(summary) {
+            document.getElementById('total-logs').textContent = summary.total_logs || 0;
+            document.getElementById('error-count').textContent = (summary.level_counts?.ERROR || 0);
+            document.getElementById('warning-count').textContent = (summary.level_counts?.WARNING || 0);
+            document.getElementById('recent-errors').textContent = summary.recent_errors || 0;
+        }
+
+        // Toggle log details visibility
+        function toggleLogDetails(element) {
+            element.classList.toggle('expanded');
+        }
+
+        // Toggle auto refresh
+        function toggleAutoRefresh() {
+            autoRefresh = !autoRefresh;
+            const btn = document.getElementById('auto-refresh-btn');
+
+            if (autoRefresh) {
+                btn.textContent = '🟢 Auto Refresh';
+                btn.style.background = '#4CAF50';
+                refreshInterval = setInterval(loadLogs, 5000); // Refresh every 5 seconds
+            } else {
+                btn.textContent = '🔴 Auto Refresh';
+                btn.style.background = '#666';
+                clearInterval(refreshInterval);
+            }
+        }
+
+        // Refresh logs manually
+        function refreshLogs() {
+            loadLogs();
+        }
+
+        // Export logs
+        async function exportLogs(format) {
+            try {
+                const includeDetails = confirm('Include detailed information in export?');
+                const url = `/api/logs/export?format=${format}&include_details=${includeDetails}`;
+
+                const response = await fetch(url);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = response.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] || `logs.${format}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(downloadUrl);
+                    document.body.removeChild(a);
+                } else {
+                    throw new Error('Failed to export logs');
+                }
+            } catch (error) {
+                showError('Error exporting logs: ' + error.message);
+            }
+        }
+
+        // Clear old logs
+        async function clearLogs() {
+            if (!confirm('Clear logs older than 24 hours?')) return;
+
+            try {
+                const response = await fetch('/api/logs/clear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'older_than_hours=24'
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    alert(data.message);
+                    loadLogs(); // Refresh the display
+                } else {
+                    throw new Error(data.error || 'Failed to clear logs');
+                }
+            } catch (error) {
+                showError('Error clearing logs: ' + error.message);
+            }
+        }
+
+        // Show debug information
+        async function showDebugInfo() {
+            try {
+                const response = await fetch('/api/debug/info');
+                const debugData = await response.json();
+
+                if (response.ok) {
+                    const debugContent = document.getElementById('debug-content');
+                    debugContent.innerHTML = `
+                        <h3>System Information</h3>
+                        <pre>${JSON.stringify(debugData.system_info, null, 2)}</pre>
+
+                        <h3>Dashboard State</h3>
+                        <pre>${JSON.stringify(debugData.dashboard_state, null, 2)}</pre>
+
+                        <h3>Agent Details</h3>
+                        <pre>${JSON.stringify(debugData.agent_details, null, 2)}</pre>
+
+                        <h3>Recent Errors</h3>
+                        <pre>${JSON.stringify(debugData.recent_errors, null, 2)}</pre>
+                    `;
+
+                    document.getElementById('debug-modal').style.display = 'block';
+                } else {
+                    throw new Error('Failed to load debug info');
+                }
+            } catch (error) {
+                showError('Error loading debug info: ' + error.message);
+            }
+        }
+
+        // Close debug modal
+        function closeDebugModal() {
+            document.getElementById('debug-modal').style.display = 'none';
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorElement = document.getElementById('error-message');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('debug-modal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

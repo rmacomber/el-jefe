@@ -1,0 +1,18 @@
+[Unit]
+Description=El Jefe Monitoring Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=eljefe
+WorkingDirectory=/Users/ryanmacomber/Documents/Orchestrator-Agent
+Environment=PYTHONPATH=/Users/ryanmacomber/Documents/Orchestrator-Agent
+EnvironmentFile=/Users/ryanmacomber/Documents/Orchestrator-Agent/.env
+ExecStart=/usr/bin/python3 /Users/ryanmacomber/Documents/Orchestrator-Agent/monitoring_dashboard.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

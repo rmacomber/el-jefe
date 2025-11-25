@@ -1,0 +1,2262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Jefe - Advanced Analytics & Workflow Command Center</title>
+
+    <!-- External Libraries for Advanced Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.2/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/regression@2.0.1/dist/regression.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Custom Properties for Design System */
+        :root {
+            /* Primary Colors - Professional Blue Palette */
+            --primary-50: #f0f9ff;
+            --primary-100: #e0f2fe;
+            --primary-500: #0ea5e9;
+            --primary-600: #0284c7;
+            --primary-900: #0c4a6e;
+
+            /* Status Colors */
+            --success: #059669;
+            --success-light: #d1fae5;
+            --warning: #d97706;
+            --warning-light: #fef3c7;
+            --error: #dc2626;
+            --error-light: #fee2e2;
+            --info: #2563eb;
+            --info-light: #dbeafe;
+
+            /* Advanced Analytics Colors */
+            --predictive: #8b5cf6;
+            --predictive-light: #ede9fe;
+            --optimization: #10b981;
+            --optimization-light: #d1fae5;
+            --anomaly: #f59e0b;
+            --anomaly-light: #fef3c7;
+
+            /* Workflow Colors */
+            --workflow-feature: #3b82f6;
+            --workflow-security: #ef4444;
+            --workflow-documentation: #10b981;
+            --workflow-debug: #f59e0b;
+            --workflow-deployment: #8b5cf6;
+
+            /* Neutral Colors */
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+
+            /* Background Colors */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --bg-overlay: rgba(0, 0, 0, 0.5);
+
+            /* Typography */
+            --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+            /* Type Scale */
+            --text-xs: 0.75rem;    /* 12px */
+            --text-sm: 0.875rem;   /* 14px */
+            --text-base: 1rem;     /* 16px */
+            --text-lg: 1.125rem;   /* 18px */
+            --text-xl: 1.25rem;    /* 20px */
+            --text-2xl: 1.5rem;    /* 24px */
+            --text-3xl: 1.875rem;  /* 30px */
+            --text-4xl: 2.25rem;   /* 36px */
+
+            /* Spacing */
+            --space-1: 0.25rem;
+            --space-2: 0.5rem;
+            --space-3: 0.75rem;
+            --space-4: 1rem;
+            --space-5: 1.25rem;
+            --space-6: 1.5rem;
+            --space-8: 2rem;
+            --space-10: 2.5rem;
+            --space-12: 3rem;
+            --space-16: 4rem;
+
+            /* Border Radius */
+            --radius-sm: 0.25rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            --radius-2xl: 1.5rem;
+            --radius-full: 9999px;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+            /* Transitions */
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Dark Mode */
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --gray-50: #1e293b;
+            --gray-100: #334155;
+            --gray-200: #475569;
+            --gray-300: #64748b;
+            --gray-400: #94a3b8;
+            --gray-500: #cbd5e1;
+            --gray-600: #e2e8f0;
+            --gray-700: #f1f5f9;
+            --gray-800: #f8fafc;
+            --gray-900: #ffffff;
+        }
+
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--bg-secondary);
+            color: var(--gray-800);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Skip Link for Accessibility */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 6px;
+            background: var(--primary-600);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            z-index: 1000;
+        }
+
+        .skip-link:focus {
+            top: 6px;
+        }
+
+        /* Enhanced Chat Interface Styles */
+        .chat-workflow-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: var(--space-6);
+            height: calc(100vh - 200px);
+            min-height: 600px;
+        }
+
+        .chat-main-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        .chat-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .workflow-templates-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .workflow-sessions-panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+            color: white;
+            padding: var(--space-6);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--primary-700);
+        }
+
+        .chat-header-content {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        .el-jefe-status {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: var(--radius-full);
+            font-size: var(--text-sm);
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.inactive {
+            background: #ef4444;
+            animation: none;
+        }
+
+        .chat-controls {
+            display: flex;
+            gap: var(--space-3);
+        }
+
+        .chat-control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-lg);
+            font-size: var(--text-sm);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .chat-control-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .chat-control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-6);
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .chat-message {
+            display: flex;
+            gap: var(--space-3);
+            padding: var(--space-4);
+            border-radius: var(--radius-lg);
+            transition: all var(--transition-fast);
+            animation: messageSlideIn var(--transition-normal);
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-message.user {
+            background: var(--primary-50);
+            margin-left: var(--space-12);
+            border-top-right-radius: var(--radius-sm);
+        }
+
+        .chat-message.el-jefe {
+            background: var(--gray-50);
+            margin-right: var(--space-12);
+            border-top-left-radius: var(--radius-sm);
+        }
+
+        .chat-message.system {
+            background: var(--info-light);
+            margin: 0 auto;
+            max-width: 80%;
+            text-align: center;
+            font-style: italic;
+            color: var(--info);
+        }
+
+        .chat-message.error {
+            background: var(--error-light);
+            color: var(--error);
+            margin: 0 auto;
+            max-width: 80%;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-lg);
+            flex-shrink: 0;
+        }
+
+        .message-avatar.user {
+            background: var(--primary-500);
+            color: white;
+        }
+
+        .message-avatar.el-jefe {
+            background: var(--gray-700);
+            color: white;
+        }
+
+        .message-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: var(--text-sm);
+            color: var(--gray-600);
+        }
+
+        .message-sender {
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        .message-timestamp {
+            font-size: var(--text-xs);
+            color: var(--gray-500);
+        }
+
+        .message-text {
+            font-size: var(--text-base);
+            line-height: 1.6;
+            color: var(--gray-700);
+            word-wrap: break-word;
+        }
+
+        .message-text p {
+            margin-bottom: var(--space-2);
+        }
+
+        .message-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-text code {
+            background: var(--gray-100);
+            padding: var(--space-1) var(--space-2);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+        }
+
+        .message-text pre {
+            background: var(--gray-100);
+            padding: var(--space-3);
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            margin: var(--space-2) 0;
+        }
+
+        .message-text pre code {
+            background: transparent;
+            padding: 0;
+        }
+
+        /* Workflow Detection Badge */
+        .workflow-detection {
+            background: var(--predictive-light);
+            color: var(--predictive);
+            padding: var(--space-2) var(--space-3);
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            margin-bottom: var(--space-3);
+        }
+
+        .workflow-actions {
+            display: flex;
+            gap: var(--space-2);
+            margin-top: var(--space-3);
+        }
+
+        .workflow-action-btn {
+            padding: var(--space-2) var(--space-3);
+            background: var(--predictive);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .workflow-action-btn:hover {
+            background: var(--predictive-dark);
+            transform: translateY(-1px);
+        }
+
+        .workflow-action-btn.secondary {
+            background: var(--gray-500);
+        }
+
+        /* Enhanced Chat Input */
+        .chat-input-container {
+            padding: var(--space-6);
+            background: var(--bg-primary);
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: var(--space-3);
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            min-height: 50px;
+            max-height: 120px;
+            padding: var(--space-3) var(--space-4);
+            border: 2px solid var(--gray-300);
+            border-radius: var(--radius-xl);
+            font-size: var(--text-base);
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            transition: all var(--transition-fast);
+        }
+
+        .chat-input:focus {
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        .chat-input:disabled {
+            background: var(--gray-100);
+            color: var(--gray-500);
+            cursor: not-allowed;
+        }
+
+        .chat-send-btn {
+            background: var(--primary-500);
+            color: white;
+            border: none;
+            padding: var(--space-3) var(--space-6);
+            border-radius: var(--radius-xl);
+            font-size: var(--text-base);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            white-space: nowrap;
+        }
+
+        .chat-send-btn:hover:not(:disabled) {
+            background: var(--primary-600);
+            transform: translateY(-1px);
+        }
+
+        .chat-send-btn:disabled {
+            background: var(--gray-400);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Chat Options Bar */
+        .chat-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-3) 0;
+        }
+
+        .chat-options-left {
+            display: flex;
+            gap: var(--space-3);
+            align-items: center;
+        }
+
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .file-upload-label:hover {
+            background: var(--gray-200);
+        }
+
+        .file-upload-input {
+            display: none;
+        }
+
+        .markdown-support {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: var(--text-sm);
+            color: var(--gray-500);
+        }
+
+        .chat-options-right {
+            display: flex;
+            gap: var(--space-2);
+            align-items: center;
+        }
+
+        .session-info {
+            font-size: var(--text-sm);
+            color: var(--gray-500);
+        }
+
+        /* Workflow Templates */
+        .panel-header {
+            padding: var(--space-4) var(--space-6);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--gray-200);
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        .panel-content {
+            padding: var(--space-4);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .workflow-template {
+            background: var(--bg-secondary);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            margin-bottom: var(--space-3);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .workflow-template:hover {
+            border-color: var(--primary-500);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .workflow-template-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-2);
+        }
+
+        .workflow-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-lg);
+            color: white;
+        }
+
+        .workflow-icon.feature { background: var(--workflow-feature); }
+        .workflow-icon.security { background: var(--workflow-security); }
+        .workflow-icon.documentation { background: var(--workflow-documentation); }
+        .workflow-icon.debug { background: var(--workflow-debug); }
+        .workflow-icon.deployment { background: var(--workflow-deployment); }
+
+        .workflow-template-info {
+            flex: 1;
+        }
+
+        .workflow-template-name {
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: var(--space-1);
+        }
+
+        .workflow-template-description {
+            font-size: var(--text-sm);
+            color: var(--gray-600);
+            margin-bottom: var(--space-2);
+        }
+
+        .workflow-template-meta {
+            display: flex;
+            gap: var(--space-4);
+            font-size: var(--text-xs);
+            color: var(--gray-500);
+        }
+
+        /* Workflow Sessions */
+        .session-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            margin-bottom: var(--space-3);
+            transition: all var(--transition-fast);
+        }
+
+        .session-item:hover {
+            border-color: var(--primary-500);
+        }
+
+        .session-item.active {
+            border-color: var(--primary-500);
+            background: var(--primary-50);
+        }
+
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-2);
+        }
+
+        .session-title {
+            font-weight: 600;
+            color: var(--gray-800);
+            font-size: var(--text-sm);
+        }
+
+        .session-status {
+            padding: var(--space-1) var(--space-2);
+            border-radius: var(--radius-full);
+            font-size: var(--text-xs);
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .session-status.running {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .session-status.paused {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .session-status.completed {
+            background: var(--info-light);
+            color: var(--info);
+        }
+
+        .session-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: var(--text-xs);
+            color: var(--gray-500);
+        }
+
+        /* Scheduling Interface */
+        .scheduling-interface {
+            background: var(--bg-primary);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            padding: var(--space-6);
+            margin-bottom: var(--space-6);
+        }
+
+        .schedule-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-4);
+            margin-top: var(--space-4);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: var(--gray-700);
+            font-size: var(--text-sm);
+        }
+
+        .form-input {
+            padding: var(--space-2) var(--space-3);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-md);
+            font-size: var(--text-base);
+            outline: none;
+            transition: all var(--transition-fast);
+        }
+
+        .form-input:focus {
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        .schedule-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: var(--space-3);
+            justify-content: flex-end;
+            margin-top: var(--space-2);
+        }
+
+        .schedule-btn {
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            border: 1px solid var(--gray-300);
+            background: var(--bg-primary);
+            color: var(--gray-700);
+        }
+
+        .schedule-btn.primary {
+            background: var(--primary-500);
+            color: white;
+            border-color: var(--primary-500);
+        }
+
+        .schedule-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .schedule-btn.primary:hover {
+            background: var(--primary-600);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .chat-workflow-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .chat-sidebar {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: var(--space-4);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .chat-sidebar {
+                grid-template-columns: 1fr;
+            }
+
+            .chat-message.user {
+                margin-left: var(--space-4);
+            }
+
+            .chat-message.el-jefe {
+                margin-right: var(--space-4);
+            }
+
+            .schedule-form {
+                grid-template-columns: 1fr;
+            }
+
+            .chat-options {
+                flex-direction: column;
+                gap: var(--space-3);
+                align-items: stretch;
+            }
+
+            .chat-input-row {
+                flex-direction: column;
+            }
+
+            .chat-send-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: slideInUp var(--transition-normal);
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Tab Navigation (existing from advanced dashboard) */
+        .tab-nav {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--gray-200);
+            padding: 0 var(--space-6);
+            position: sticky;
+            top: 73px;
+            z-index: 90;
+        }
+
+        .tab-list {
+            display: flex;
+            list-style: none;
+            gap: var(--space-2);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .tab-button {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-4) var(--space-6);
+            border: none;
+            background: transparent;
+            color: var(--gray-600);
+            font-size: var(--text-sm);
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+            text-decoration: none;
+        }
+
+        .tab-button.active {
+            color: var(--primary-600);
+            border-bottom-color: var(--primary-600);
+        }
+
+        .header {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--gray-200);
+            padding: var(--space-4) var(--space-6);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .header-title h1 {
+            font-size: var(--text-2xl);
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            border-radius: var(--radius-full);
+            font-size: var(--text-sm);
+            font-weight: 500;
+            transition: all var(--transition-fast);
+        }
+
+        .connection-status.connected {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .connection-status.disconnected {
+            background: var(--error-light);
+            color: var(--error);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--space-6);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            background: transparent;
+            color: var(--gray-600);
+        }
+
+        .btn:hover {
+            background: var(--gray-100);
+            color: var(--gray-800);
+        }
+
+        .btn-primary {
+            background: var(--primary-500);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-600);
+            color: white;
+        }
+
+        /* Tab content */
+        .tab-content {
+            display: none;
+            animation: fadeIn var(--transition-normal);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Header -->
+    <header class="header" role="banner">
+        <div class="header-content">
+            <div class="header-title">
+                <h1>🤖 El Jefe</h1>
+                <span class="text-gray-500 text-sm">Advanced Analytics & Workflow Command Center</span>
+            </div>
+
+            <div class="connection-status connected" id="connection-status">
+                <span class="connection-dot pulse"></span>
+                <span>Connected</span>
+            </div>
+
+            <div class="header-actions">
+                <button class="btn" onclick="toggleTheme()">🌙</button>
+                <button class="btn" onclick="showSettings()">⚙️</button>
+                <button class="btn btn-primary" onclick="refreshAllData()">🔄 Refresh</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <nav class="tab-nav" role="tablist">
+        <div class="tab-nav-container">
+            <ul class="tab-list">
+                <li>
+                    <button
+                        class="tab-button active"
+                        role="tab"
+                        aria-selected="true"
+                        data-tab="chat-workflow"
+                        onclick="switchTab('chat-workflow')"
+                    >
+                        <span>💬</span>
+                        <span>Chat & Workflow</span>
+                    </button>
+                </li>
+                <li>
+                    <button
+                        class="tab-button"
+                        role="tab"
+                        aria-selected="false"
+                        data-tab="predictions"
+                        onclick="switchTab('predictions')"
+                    >
+                        <span>🔮</span>
+                        <span>Predictions</span>
+                    </button>
+                </li>
+                <li>
+                    <button
+                        class="tab-button"
+                        role="tab"
+                        aria-selected="false"
+                        data-tab="optimization"
+                        onclick="switchTab('optimization')"
+                    >
+                        <span>⚡</span>
+                        <span>Optimization</span>
+                    </button>
+                </li>
+                <li>
+                    <button
+                        class="tab-button"
+                        role="tab"
+                        aria-selected="false"
+                        data-tab="anomalies"
+                        onclick="switchTab('anomalies')"
+                    >
+                        <span>🚨</span>
+                        <span>Anomalies</span>
+                    </button>
+                </li>
+                <li>
+                    <button
+                        class="tab-button"
+                        role="tab"
+                        aria-selected="false"
+                        data-tab="cost"
+                        onclick="switchTab('cost')"
+                    >
+                        <span>💰</span>
+                        <span>Cost Analysis</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container" id="main-content" role="main">
+        <!-- Chat & Workflow Tab -->
+        <section id="chat-workflow-tab" class="tab-content active" role="tabpanel">
+            <!-- Scheduling Interface -->
+            <div class="scheduling-interface">
+                <h3 style="margin-bottom: var(--space-4); color: var(--gray-800);">📅 Schedule Workflow</h3>
+                <form id="schedule-form" onsubmit="handleScheduleSubmit(event)">
+                    <div class="schedule-form">
+                        <div class="form-group">
+                            <label for="schedule-workflow" class="form-label">Workflow Type</label>
+                            <select id="schedule-workflow" class="form-input" required>
+                                <option value="">Select workflow...</option>
+                                <option value="feature-development">🚀 Feature Development</option>
+                                <option value="security-audit">🔒 Security Audit</option>
+                                <option value="documentation-update">📚 Documentation Update</option>
+                                <option value="debugging-session">🐛 Debugging Session</option>
+                                <option value="deployment-prep">🚀 Deployment Preparation</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="schedule-date" class="form-label">Date</label>
+                            <input type="date" id="schedule-date" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="schedule-time" class="form-label">Time</label>
+                            <input type="time" id="schedule-time" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="schedule-priority" class="form-label">Priority</label>
+                            <select id="schedule-priority" class="form-input">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label for="schedule-description" class="form-label">Description (Optional)</label>
+                            <textarea id="schedule-description" class="form-input" rows="3" placeholder="Describe the workflow requirements..."></textarea>
+                        </div>
+                        <div class="schedule-actions">
+                            <button type="button" class="schedule-btn" onclick="clearScheduleForm()">Clear</button>
+                            <button type="submit" class="schedule-btn primary">Schedule Workflow</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Enhanced Chat Interface -->
+            <div class="chat-workflow-container">
+                <!-- Chat Main Panel -->
+                <div class="chat-main-panel">
+                    <div class="chat-header">
+                        <div class="chat-header-content">
+                            <h2 style="margin: 0;">💬 Chat with El Jefe</h2>
+                            <div class="el-jefe-status">
+                                <span class="status-indicator" id="el-jefe-indicator"></span>
+                                <span id="el-jefe-status-text">Ready</span>
+                            </div>
+                        </div>
+                        <div class="chat-controls">
+                            <button class="chat-control-btn" id="start-el-jefe-btn" onclick="startElJefe()">
+                                <span>🚀</span>
+                                <span>Start</span>
+                            </button>
+                            <button class="chat-control-btn" id="stop-el-jefe-btn" onclick="stopElJefe()" style="display: none;">
+                                <span>⏹️</span>
+                                <span>Stop</span>
+                            </button>
+                            <button class="chat-control-btn" onclick="clearChat()">
+                                <span>🗑️</span>
+                                <span>Clear</span>
+                            </button>
+                            <button class="chat-control-btn" onclick="exportChat()">
+                                <span>📥</span>
+                                <span>Export</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="chat-messages" class="chat-messages">
+                        <div class="chat-message system">
+                            <div class="message-content">
+                                <div class="message-text">
+                                    <p>👋 Welcome to the El Jefe Workflow Command Center! I can help you with:</p>
+                                    <p>• 🚀 Running automated workflows (feature development, security audits, etc.)</p>
+                                    <p>• 📊 Monitoring system performance and analytics</p>
+                                    <p>• 🔍 Debugging issues and optimizing performance</p>
+                                    <p>• 📝 Managing documentation and deployment tasks</p>
+                                    <p>Type "help" to see available commands, or describe what you'd like to accomplish!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <div class="chat-input-wrapper">
+                            <div class="chat-options">
+                                <div class="chat-options-left">
+                                    <label for="file-upload" class="file-upload-label">
+                                        <span>📎</span>
+                                        <span>Attach File</span>
+                                    </label>
+                                    <input type="file" id="file-upload" class="file-upload-input" onchange="handleFileUpload(event)">
+                                    <div class="markdown-support">
+                                        <span>📝</span>
+                                        <span>Markdown supported</span>
+                                    </div>
+                                </div>
+                                <div class="chat-options-right">
+                                    <span class="session-info" id="session-info">Session: Not started</span>
+                                </div>
+                            </div>
+                            <div class="chat-input-row">
+                                <textarea
+                                    id="chat-input"
+                                    class="chat-input"
+                                    placeholder="Type your message... (Shift+Enter for new line, Enter to send)"
+                                    disabled
+                                    rows="1"
+                                    onkeydown="handleChatKeydown(event)"
+                                    oninput="autoResizeTextarea(this)"
+                                ></textarea>
+                                <button id="send-btn" class="chat-send-btn" onclick="sendMessage()" disabled>
+                                    <span>📤</span>
+                                    <span>Send</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Sidebar -->
+                <div class="chat-sidebar">
+                    <!-- Workflow Templates Panel -->
+                    <div class="workflow-templates-panel">
+                        <div class="panel-header">🎯 Workflow Templates</div>
+                        <div class="panel-content" id="workflow-templates">
+                            <div class="workflow-template" onclick="selectWorkflowTemplate('feature-development')">
+                                <div class="workflow-template-header">
+                                    <div class="workflow-icon feature">🚀</div>
+                                    <div class="workflow-template-info">
+                                        <div class="workflow-template-name">Feature Development</div>
+                                        <div class="workflow-template-description">Complete feature implementation workflow</div>
+                                    </div>
+                                </div>
+                                <div class="workflow-template-meta">
+                                    <span>⏱️ 30-60 min</span>
+                                    <span>🤖 5 agents</span>
+                                    <span>📊 High impact</span>
+                                </div>
+                            </div>
+
+                            <div class="workflow-template" onclick="selectWorkflowTemplate('security-audit')">
+                                <div class="workflow-template-header">
+                                    <div class="workflow-icon security">🔒</div>
+                                    <div class="workflow-template-info">
+                                        <div class="workflow-template-name">Security Audit</div>
+                                        <div class="workflow-template-description">Comprehensive security assessment</div>
+                                    </div>
+                                </div>
+                                <div class="workflow-template-meta">
+                                    <span>⏱️ 20-40 min</span>
+                                    <span>🤖 3 agents</span>
+                                    <span>🛡️ Critical</span>
+                                </div>
+                            </div>
+
+                            <div class="workflow-template" onclick="selectWorkflowTemplate('documentation-update')">
+                                <div class="workflow-template-header">
+                                    <div class="workflow-icon documentation">📚</div>
+                                    <div class="workflow-template-info">
+                                        <div class="workflow-template-name">Documentation Update</div>
+                                        <div class="workflow-template-description">Generate and update documentation</div>
+                                    </div>
+                                </div>
+                                <div class="workflow-template-meta">
+                                    <span>⏱️ 15-30 min</span>
+                                    <span>🤖 2 agents</span>
+                                    <span>📝 Medium</span>
+                                </div>
+                            </div>
+
+                            <div class="workflow-template" onclick="selectWorkflowTemplate('debugging-session')">
+                                <div class="workflow-template-header">
+                                    <div class="workflow-icon debug">🐛</div>
+                                    <div class="workflow-template-info">
+                                        <div class="workflow-template-name">Debugging Session</div>
+                                        <div class="workflow-template-description">Systematic bug investigation</div>
+                                    </div>
+                                </div>
+                                <div class="workflow-template-meta">
+                                    <span>⏱️ 20-45 min</span>
+                                    <span>🤖 4 agents</span>
+                                    <span>🔍 Variable</span>
+                                </div>
+                            </div>
+
+                            <div class="workflow-template" onclick="selectWorkflowTemplate('deployment-prep')">
+                                <div class="workflow-template-header">
+                                    <div class="workflow-icon deployment">🚀</div>
+                                    <div class="workflow-template-info">
+                                        <div class="workflow-template-name">Deployment Preparation</div>
+                                        <div class="workflow-template-description">Production deployment setup</div>
+                                    </div>
+                                </div>
+                                <div class="workflow-template-meta">
+                                    <span>⏱️ 25-50 min</span>
+                                    <span>🤖 3 agents</span>
+                                    <span>🌟 High</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Workflow Sessions Panel -->
+                    <div class="workflow-sessions-panel">
+                        <div class="panel-header">📋 Active Sessions</div>
+                        <div class="panel-content" id="workflow-sessions">
+                            <div style="text-align: center; color: var(--gray-500); padding: var(--space-4);">
+                                <div style="font-size: var(--text-2xl); margin-bottom: var(--space-2);">📭</div>
+                                <div>No active sessions</div>
+                                <div style="font-size: var(--text-sm); margin-top: var(--space-1);">Start a workflow to see sessions here</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Other tabs from the original advanced dashboard would go here -->
+        <!-- For brevity, I'm focusing on the enhanced chat interface -->
+
+    </main>
+
+    <script>
+        // Global state management
+        const state = {
+            ws: null,
+            reconnectAttempts: 0,
+            maxReconnectAttempts: 5,
+            elJefeActive: false,
+            currentTab: 'chat-workflow',
+            workflowSessions: new Map(),
+            currentSession: null,
+            workflowDetectionEnabled: true,
+            messageHistory: [],
+            charts: {}
+        };
+
+        // Workflow templates configuration
+        const workflowTemplates = {
+            'feature-development': {
+                name: 'Feature Development',
+                icon: '🚀',
+                color: '#3b82f6',
+                agents: ['claude-code-expert', 'security-reviewer', 'debugger', 'technical-writer', 'it-specialist'],
+                estimatedTime: '30-60 min',
+                description: 'Complete feature implementation from concept to deployment',
+                keywords: ['feature', 'development', 'implement', 'build', 'create', 'add']
+            },
+            'security-audit': {
+                name: 'Security Audit',
+                icon: '🔒',
+                color: '#ef4444',
+                agents: ['security-reviewer', 'claude-code-expert'],
+                estimatedTime: '20-40 min',
+                description: 'Comprehensive security assessment and vulnerability analysis',
+                keywords: ['security', 'audit', 'vulnerability', 'scan', 'security review', 'penetration test']
+            },
+            'documentation-update': {
+                name: 'Documentation Update',
+                icon: '📚',
+                color: '#10b981',
+                agents: ['technical-writer', 'claude-code-expert'],
+                estimatedTime: '15-30 min',
+                description: 'Generate and update technical documentation',
+                keywords: ['documentation', 'docs', 'manual', 'guide', 'readme', 'api docs']
+            },
+            'debugging-session': {
+                name: 'Debugging Session',
+                icon: '🐛',
+                color: '#f59e0b',
+                agents: ['debugger', 'claude-code-expert'],
+                estimatedTime: '20-45 min',
+                description: 'Systematic bug investigation and resolution',
+                keywords: ['debug', 'bug', 'issue', 'problem', 'error', 'fix', 'troubleshoot']
+            },
+            'deployment-prep': {
+                name: 'Deployment Preparation',
+                icon: '🚀',
+                color: '#8b5cf6',
+                agents: ['it-specialist', 'claude-code-expert', 'security-reviewer'],
+                estimatedTime: '25-50 min',
+                description: 'Production deployment setup and configuration',
+                keywords: ['deploy', 'deployment', 'production', 'release', 'ship', 'launch']
+            }
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            initializeWebSocket();
+            initializeTheme();
+            loadChatHistory();
+            initializeDatePicker();
+            setupAutoSave();
+            updateWorkflowSessions();
+        }
+
+        // WebSocket management
+        function initializeWebSocket() {
+            try {
+                state.ws = new WebSocket('ws://localhost:8080/ws');
+
+                state.ws.onopen = function() {
+                    console.log('WebSocket connected');
+                    updateConnectionStatus(true);
+                    state.reconnectAttempts = 0;
+
+                    // Request initial data
+                    state.ws.send(JSON.stringify({ type: 'refresh' }));
+                };
+
+                state.ws.onclose = function() {
+                    console.log('WebSocket disconnected');
+                    updateConnectionStatus(false);
+                    attemptReconnection();
+                };
+
+                state.ws.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    updateConnectionStatus(false);
+                };
+
+                state.ws.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleWebSocketMessage(data);
+                    } catch (error) {
+                        console.error('Error parsing WebSocket message:', error);
+                    }
+                };
+            } catch (error) {
+                console.error('Failed to initialize WebSocket:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        function attemptReconnection() {
+            if (state.reconnectAttempts < state.maxReconnectAttempts) {
+                state.reconnectAttempts++;
+                console.log(`Attempting reconnection ${state.reconnectAttempts}/${state.maxReconnectAttempts}`);
+
+                setTimeout(() => {
+                    initializeWebSocket();
+                }, 5000);
+            } else {
+                console.error('Max reconnection attempts reached');
+                updateConnectionStatus(false);
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('connection-status');
+            const indicator = statusElement.querySelector('.connection-dot');
+            const text = statusElement.querySelector('span:last-child');
+
+            if (connected) {
+                statusElement.className = 'connection-status connected';
+                indicator.className = 'connection-dot pulse';
+                text.textContent = 'Connected';
+            } else {
+                statusElement.className = 'connection-status disconnected';
+                indicator.className = 'connection-dot';
+                text.textContent = 'Disconnected';
+            }
+        }
+
+        function handleWebSocketMessage(data) {
+            console.log('Received WebSocket message:', data);
+
+            switch(data.type) {
+                case 'agent_update':
+                    handleAgentUpdate(data);
+                    break;
+                case 'workflow_update':
+                    handleWorkflowUpdate(data);
+                    break;
+                case 'chat_message':
+                    displayChatMessage(data.message);
+                    break;
+                case 'workflow_detected':
+                    handleWorkflowDetection(data);
+                    break;
+                case 'session_status':
+                    handleSessionStatus(data);
+                    break;
+                case 'initial_data':
+                    handleInitialData(data);
+                    break;
+                default:
+                    console.log('Unknown message type:', data.type);
+            }
+        }
+
+        // Chat functionality
+        function startElJefe() {
+            if (state.elJefeActive) return;
+
+            state.elJefeActive = true;
+            updateElJefeStatus('starting', 'Starting El Jefe...');
+
+            // Send start message via WebSocket
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                state.ws.send(JSON.stringify({ type: 'start_el_jefe' }));
+            }
+
+            // Create new session
+            createNewSession();
+
+            // Update UI
+            document.getElementById('start-el-jefe-btn').style.display = 'none';
+            document.getElementById('stop-el-jefe-btn').style.display = 'flex';
+            document.getElementById('chat-input').disabled = false;
+            document.getElementById('send-btn').disabled = false;
+            document.getElementById('session-info').textContent = `Session: ${state.currentSession}`;
+
+            displayChatMessage({
+                sender: 'system',
+                content: '🚀 El Jefe is starting up... Initializing workflow orchestration system.',
+                timestamp: new Date().toISOString(),
+                message_type: 'system'
+            });
+
+            // Simulate startup completion
+            setTimeout(() => {
+                updateElJefeStatus('ready', 'Ready');
+                displayChatMessage({
+                    sender: 'el-jefe',
+                    content: '👋 I\'m ready to help! I can assist with workflow management, system monitoring, and task automation. What would you like to work on today?',
+                    timestamp: new Date().toISOString(),
+                    message_type: 'response'
+                });
+            }, 2000);
+        }
+
+        function stopElJefe() {
+            if (!state.elJefeActive) return;
+
+            state.elJefeActive = false;
+            updateElJefeStatus('inactive', 'Stopped');
+
+            // Send stop message via WebSocket
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                state.ws.send(JSON.stringify({ type: 'stop_el_jefe' }));
+            }
+
+            // Update UI
+            document.getElementById('start-el-jefe-btn').style.display = 'flex';
+            document.getElementById('stop-el-jefe-btn').style.display = 'none';
+            document.getElementById('chat-input').disabled = true;
+            document.getElementById('send-btn').disabled = true;
+            document.getElementById('session-info').textContent = 'Session: Not started';
+
+            displayChatMessage({
+                sender: 'system',
+                content: '⏹️ El Jefe has been stopped. All workflows have been paused.',
+                timestamp: new Date().toISOString(),
+                message_type: 'system'
+            });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+
+            if (!message || !state.elJefeActive) return;
+
+            // Add message to history
+            const userMessage = {
+                sender: 'user',
+                content: message,
+                timestamp: new Date().toISOString(),
+                message_type: 'user'
+            };
+
+            displayChatMessage(userMessage);
+            state.messageHistory.push(userMessage);
+
+            // Detect workflows in message
+            if (state.workflowDetectionEnabled) {
+                detectWorkflows(message);
+            }
+
+            // Send via WebSocket
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                state.ws.send(JSON.stringify({
+                    type: 'chat_message',
+                    message: message,
+                    session_id: state.currentSession
+                }));
+            }
+
+            // Clear input
+            input.value = '';
+            autoResizeTextarea(input);
+            input.focus();
+
+            // Simulate El Jefe thinking
+            displayTypingIndicator();
+        }
+
+        function displayChatMessage(message) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${message.sender}`;
+
+            // Determine avatar and icon
+            let avatarContent = '';
+            let avatarClass = 'message-avatar ';
+
+            if (message.sender === 'user') {
+                avatarClass += 'user';
+                avatarContent = '👤';
+            } else if (message.sender === 'el-jefe') {
+                avatarClass += 'el-jefe';
+                avatarContent = '🤖';
+            } else if (message.sender === 'system') {
+                avatarClass += 'system';
+                avatarContent = 'ℹ️';
+            } else if (message.message_type === 'error') {
+                avatarClass += 'error';
+                avatarContent = '❌';
+            }
+
+            // Create message structure
+            messageDiv.innerHTML = `
+                <div class="${avatarClass}">${avatarContent}</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="message-sender">${message.sender.charAt(0).toUpperCase() + message.sender.slice(1)}</span>
+                        <span class="message-timestamp">${new Date(message.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <div class="message-text">${processMessageContent(message.content)}</div>
+                </div>
+            `;
+
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // Store in history
+            state.messageHistory.push(message);
+            saveChatHistory();
+        }
+
+        function processMessageContent(content) {
+            // Basic markdown processing with DOMPurify for security
+            if (typeof marked !== 'undefined') {
+                return DOMPurify.sanitize(marked.parse(content));
+            }
+            // Fallback: convert line breaks to <br>
+            return content.replace(/\n/g, '<br>');
+        }
+
+        function displayTypingIndicator() {
+            const messagesContainer = document.getElementById('chat-messages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'chat-message el-jefe typing-indicator';
+            typingDiv.id = 'typing-indicator';
+
+            typingDiv.innerHTML = `
+                <div class="message-avatar el-jefe">🤖</div>
+                <div class="message-content">
+                    <div class="message-text">
+                        <span class="typing-dots">●●●</span>
+                    </div>
+                </div>
+            `;
+
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        // Workflow detection
+        function detectWorkflows(message) {
+            const lowerMessage = message.toLowerCase();
+
+            for (const [workflowId, template] of Object.entries(workflowTemplates)) {
+                const foundKeywords = template.keywords.filter(keyword =>
+                    lowerMessage.includes(keyword.toLowerCase())
+                );
+
+                if (foundKeywords.length > 0) {
+                    displayWorkflowDetection(workflowId, template, foundKeywords);
+                    break; // Only detect one workflow at a time
+                }
+            }
+        }
+
+        function displayWorkflowDetection(workflowId, template, keywords) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const detectionDiv = document.createElement('div');
+            detectionDiv.className = 'chat-message el-jefe';
+
+            detectionDiv.innerHTML = `
+                <div class="message-avatar el-jefe">🤖</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="message-sender">El Jefe</span>
+                        <span class="message-timestamp">${new Date().toLocaleTimeString()}</span>
+                    </div>
+                    <div class="workflow-detection">
+                        <span>🎯</span>
+                        <span>Workflow Detected: ${template.name}</span>
+                    </div>
+                    <div class="message-text">
+                        <p>I detected keywords suggesting you want to run a <strong>${template.name}</strong> workflow.</p>
+                        <p>Template details:</p>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>⏱️ Estimated time: ${template.estimatedTime}</li>
+                            <li>🤖 Agents involved: ${template.agents.join(', ')}</li>
+                            <li>📋 ${template.description}</li>
+                        </ul>
+                    </div>
+                    <div class="workflow-actions">
+                        <button class="workflow-action-btn" onclick="startDetectedWorkflow('${workflowId}')">
+                            Start Workflow
+                        </button>
+                        <button class="workflow-action-btn secondary" onclick="dismissWorkflowDetection()">
+                            Dismiss
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            messagesContainer.appendChild(detectionDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function startDetectedWorkflow(workflowId) {
+            const template = workflowTemplates[workflowId];
+
+            // Remove the detection message
+            const detectionMessage = document.querySelector('.workflow-detection').closest('.chat-message');
+            if (detectionMessage) {
+                detectionMessage.remove();
+            }
+
+            // Start the workflow
+            displayChatMessage({
+                sender: 'el-jefe',
+                content: `🚀 Starting ${template.name} workflow with agents: ${template.agents.join(', ')}`,
+                timestamp: new Date().toISOString(),
+                message_type: 'response'
+            });
+
+            // Send workflow start via WebSocket
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                state.ws.send(JSON.stringify({
+                    type: 'start_workflow',
+                    workflow_type: workflowId,
+                    session_id: state.currentSession,
+                    template: template
+                }));
+            }
+
+            // Update session
+            if (state.currentSession) {
+                const session = state.workflowSessions.get(state.currentSession);
+                if (session) {
+                    session.activeWorkflow = workflowId;
+                    session.status = 'running';
+                    updateWorkflowSessions();
+                }
+            }
+        }
+
+        function dismissWorkflowDetection() {
+            const detectionMessage = document.querySelector('.workflow-detection').closest('.chat-message');
+            if (detectionMessage) {
+                detectionMessage.remove();
+            }
+        }
+
+        // Workflow templates
+        function selectWorkflowTemplate(workflowId) {
+            const template = workflowTemplates[workflowId];
+            const input = document.getElementById('chat-input');
+
+            // Pre-fill input with workflow template message
+            input.value = `I want to run a ${template.name} workflow. ${template.description}`;
+            input.disabled = false;
+            input.focus();
+
+            // If El Jefe is not active, start it
+            if (!state.elJefeActive) {
+                startElJefe();
+            }
+
+            // Show template details in chat
+            displayChatMessage({
+                sender: 'system',
+                content: `📋 Selected ${template.name} template. Modify the message above and send to start the workflow.`,
+                timestamp: new Date().toISOString(),
+                message_type: 'system'
+            });
+        }
+
+        // Session management
+        function createNewSession() {
+            const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            state.currentSession = sessionId;
+            state.workflowSessions.set(sessionId, {
+                id: sessionId,
+                startTime: new Date().toISOString(),
+                status: 'active',
+                messages: [],
+                activeWorkflow: null,
+                agentStates: {}
+            });
+
+            updateWorkflowSessions();
+        }
+
+        function updateWorkflowSessions() {
+            const sessionsContainer = document.getElementById('workflow-sessions');
+
+            if (state.workflowSessions.size === 0) {
+                sessionsContainer.innerHTML = `
+                    <div style="text-align: center; color: var(--gray-500); padding: var(--space-4);">
+                        <div style="font-size: var(--text-2xl); margin-bottom: var(--space-2);">📭</div>
+                        <div>No active sessions</div>
+                        <div style="font-size: var(--text-sm); margin-top: var(--space-1);">Start a workflow to see sessions here</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const sessionsHTML = Array.from(state.workflowSessions.values()).map(session => {
+                const isActive = session.id === state.currentSession;
+                const workflowName = session.activeWorkflow ?
+                    workflowTemplates[session.activeWorkflow]?.name || 'Unknown Workflow' :
+                    'General Chat';
+
+                return `
+                    <div class="session-item ${isActive ? 'active' : ''}" onclick="switchToSession('${session.id}')">
+                        <div class="session-header">
+                            <div class="session-title">${workflowName}</div>
+                            <div class="session-status ${session.status}">${session.status}</div>
+                        </div>
+                        <div class="session-meta">
+                            <span>Started: ${new Date(session.startTime).toLocaleTimeString()}</span>
+                            <span>Messages: ${session.messages.length}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            sessionsContainer.innerHTML = sessionsHTML;
+        }
+
+        function switchToSession(sessionId) {
+            state.currentSession = sessionId;
+            const session = state.workflowSessions.get(sessionId);
+
+            if (session) {
+                document.getElementById('session-info').textContent = `Session: ${sessionId}`;
+
+                // Load session messages
+                const messagesContainer = document.getElementById('chat-messages');
+                messagesContainer.innerHTML = '';
+
+                session.messages.forEach(message => {
+                    displayChatMessage(message);
+                });
+
+                updateWorkflowSessions();
+            }
+        }
+
+        // Scheduling functionality
+        function handleScheduleSubmit(event) {
+            event.preventDefault();
+
+            const formData = {
+                workflowType: document.getElementById('schedule-workflow').value,
+                date: document.getElementById('schedule-date').value,
+                time: document.getElementById('schedule-time').value,
+                priority: document.getElementById('schedule-priority').value,
+                description: document.getElementById('schedule-description').value,
+                sessionId: state.currentSession || 'scheduled'
+            };
+
+            // Send scheduling request via WebSocket
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                state.ws.send(JSON.stringify({
+                    type: 'schedule_workflow',
+                    schedule: formData
+                }));
+            }
+
+            // Display confirmation
+            displayChatMessage({
+                sender: 'system',
+                content: `📅 Workflow "${workflowTemplates[formData.workflowType]?.name}" scheduled for ${formData.date} at ${formData.time} (${formData.priority} priority)`,
+                timestamp: new Date().toISOString(),
+                message_type: 'system'
+            });
+
+            // Clear form
+            clearScheduleForm();
+        }
+
+        function clearScheduleForm() {
+            document.getElementById('schedule-form').reset();
+        }
+
+        // UI helpers
+        function handleChatKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Handle file upload (implementation depends on backend)
+                displayChatMessage({
+                    sender: 'system',
+                    content: `📎 File "${file.name}" uploaded. Processing...`,
+                    timestamp: new Date().toISOString(),
+                    message_type: 'system'
+                });
+
+                // Here you would typically upload the file to the server
+                // For now, just acknowledge the upload
+            }
+        }
+
+        function clearChat() {
+            const messagesContainer = document.getElementById('chat-messages');
+            messagesContainer.innerHTML = `
+                <div class="chat-message system">
+                    <div class="message-content">
+                        <div class="message-text">
+                            <p>💬 Chat cleared. Starting fresh conversation...</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Save to history if session is active
+            if (state.currentSession) {
+                const session = state.workflowSessions.get(state.currentSession);
+                if (session) {
+                    session.messages = [];
+                }
+            }
+        }
+
+        function exportChat() {
+            const exportData = {
+                session: state.currentSession,
+                timestamp: new Date().toISOString(),
+                messages: state.messageHistory,
+                sessions: Array.from(state.workflowSessions.values())
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `el-jefe-chat-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            displayChatMessage({
+                sender: 'system',
+                content: '📥 Chat history exported successfully',
+                timestamp: new Date().toISOString(),
+                message_type: 'system'
+            });
+        }
+
+        function updateElJefeStatus(status, text) {
+            const indicator = document.getElementById('el-jefe-indicator');
+            const statusText = document.getElementById('el-jefe-status-text');
+
+            statusText.textContent = text;
+
+            if (status === 'ready') {
+                indicator.className = 'status-indicator';
+            } else if (status === 'starting') {
+                indicator.className = 'status-indicator pulse';
+            } else {
+                indicator.className = 'status-indicator inactive';
+            }
+        }
+
+        // Tab navigation
+        function switchTab(tabName) {
+            state.currentTab = tabName;
+
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                const isActive = button.getAttribute('data-tab') === tabName;
+                button.setAttribute('aria-selected', isActive);
+                button.classList.toggle('active', isActive);
+            });
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === `${tabName}-tab`);
+            });
+
+            // Load tab-specific data
+            loadTabData(tabName);
+        }
+
+        function loadTabData(tabName) {
+            switch(tabName) {
+                case 'chat-workflow':
+                    // Chat data is already loaded
+                    break;
+                case 'predictions':
+                    loadPredictionsTab();
+                    break;
+                case 'optimization':
+                    loadOptimizationTab();
+                    break;
+                case 'anomalies':
+                    loadAnomaliesTab();
+                    break;
+                case 'cost':
+                    loadCostTab();
+                    break;
+            }
+        }
+
+        // Theme management
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('el-jefe-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('el-jefe-theme', newTheme);
+        }
+
+        // Persistence
+        function saveChatHistory() {
+            if (state.currentSession) {
+                const session = state.workflowSessions.get(state.currentSession);
+                if (session) {
+                    session.messages = state.messageHistory;
+                    localStorage.setItem('el-jefe-chat-history', JSON.stringify(state.messageHistory));
+                }
+            }
+        }
+
+        function loadChatHistory() {
+            try {
+                const saved = localStorage.getItem('el-jefe-chat-history');
+                if (saved) {
+                    state.messageHistory = JSON.parse(saved);
+                    // Display recent messages (last 10)
+                    const recentMessages = state.messageHistory.slice(-10);
+                    recentMessages.forEach(message => displayChatMessage(message));
+                }
+            } catch (error) {
+                console.error('Failed to load chat history:', error);
+            }
+        }
+
+        function initializeDatePicker() {
+            // Set minimum date to today
+            const dateInput = document.getElementById('schedule-date');
+            if (dateInput) {
+                const today = new Date().toISOString().split('T')[0];
+                dateInput.min = today;
+                dateInput.value = today;
+            }
+        }
+
+        function setupAutoSave() {
+            // Auto-save chat history every 30 seconds
+            setInterval(() => {
+                if (state.elJefeActive) {
+                    saveChatHistory();
+                }
+            }, 30000);
+        }
+
+        // Utility functions
+        function showSettings() {
+            alert('Settings panel coming soon!');
+        }
+
+        function refreshAllData() {
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                state.ws.send(JSON.stringify({ type: 'refresh' }));
+            }
+
+            // Update UI components
+            updateWorkflowSessions();
+            loadTabData(state.currentTab);
+        }
+
+        // Message handlers
+        function handleAgentUpdate(data) {
+            // Update agent status in relevant UI components
+            console.log('Agent update:', data);
+        }
+
+        function handleWorkflowUpdate(data) {
+            // Update workflow status in sessions panel
+            console.log('Workflow update:', data);
+
+            if (state.currentSession) {
+                const session = state.workflowSessions.get(state.currentSession);
+                if (session) {
+                    session.status = data.status;
+                    updateWorkflowSessions();
+                }
+            }
+        }
+
+        function handleWorkflowDetection(data) {
+            // Handle workflow detection from backend
+            if (data.detected && state.workflowDetectionEnabled) {
+                displayWorkflowDetection(data.workflowId, workflowTemplates[data.workflowId], data.keywords);
+            }
+        }
+
+        function handleSessionStatus(data) {
+            // Update session status from backend
+            if (data.sessionId && state.workflowSessions.has(data.sessionId)) {
+                const session = state.workflowSessions.get(data.sessionId);
+                Object.assign(session, data.updates);
+                updateWorkflowSessions();
+            }
+        }
+
+        function handleInitialData(data) {
+            // Handle initial data load from WebSocket
+            console.log('Initial data received:', data);
+
+            if (data.sessions) {
+                data.sessions.forEach(sessionData => {
+                    state.workflowSessions.set(sessionData.id, sessionData);
+                });
+                updateWorkflowSessions();
+            }
+        }
+
+        // Tab loaders (placeholder functions for other tabs)
+        function loadPredictionsTab() {
+            console.log('Loading predictions tab...');
+        }
+
+        function loadOptimizationTab() {
+            console.log('Loading optimization tab...');
+        }
+
+        function loadAnomaliesTab() {
+            console.log('Loading anomalies tab...');
+        }
+
+        function loadCostTab() {
+            console.log('Loading cost tab...');
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            // Save current state
+            saveChatHistory();
+
+            // Close WebSocket connection
+            if (state.ws) {
+                state.ws.close();
+            }
+
+            // Cleanup charts if any exist
+            Object.values(state.charts).forEach(chart => {
+                if (chart && typeof chart.destroy === 'function') {
+                    chart.destroy();
+                }
+            });
+        });
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && (!state.ws || state.ws.readyState !== WebSocket.OPEN)) {
+                initializeWebSocket();
+            }
+        });
+
+        // Error handling
+        window.addEventListener('error', (event) => {
+            console.error('Global error:', event.error);
+            displayChatMessage({
+                sender: 'system',
+                content: `❌ An error occurred: ${event.error.message}`,
+                timestamp: new Date().toISOString(),
+                message_type: 'error'
+            });
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+            displayChatMessage({
+                sender: 'system',
+                content: `❌ Promise rejected: ${event.reason}`,
+                timestamp: new Date().toISOString(),
+                message_type: 'error'
+            });
+        });
+    </script>
+</body>
+</html>

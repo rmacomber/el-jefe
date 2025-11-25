@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Jefe - Agent Command Center with Advanced Analytics</title>
+
+    <!-- External Libraries for Data Visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.2/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Custom Properties for Design System */
+        :root {
+            /* Primary Colors - Professional Blue Palette */
+            --primary-50: #f0f9ff;
+            --primary-100: #e0f2fe;
+            --primary-500: #0ea5e9;
+            --primary-600: #0284c7;
+            --primary-900: #0c4a6e;
+
+            /* Status Colors */
+            --success: #059669;
+            --success-light: #d1fae5;
+            --warning: #d97706;
+            --warning-light: #fef3c7;
+            --error: #dc2626;
+            --error-light: #fee2e2;
+            --info: #2563eb;
+            --info-light: #dbeafe;
+
+            /* Neutral Colors */
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+
+            /* Background Colors */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --bg-overlay: rgba(0, 0, 0, 0.5);
+
+            /* Typography */
+            --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+            /* Type Scale */
+            --text-xs: 0.75rem;    /* 12px */
+            --text-sm: 0.875rem;   /* 14px */
+            --text-base: 1rem;     /* 16px */
+            --text-lg: 1.125rem;   /* 18px */
+            --text-xl: 1.25rem;    /* 20px */
+            --text-2xl: 1.5rem;    /* 24px */
+            --text-3xl: 1.875rem;  /* 30px */
+            --text-4xl: 2.25rem;   /* 36px */
+
+            /* Spacing - 8px Grid System */
+            --space-1: 0.25rem;   /* 4px */
+            --space-2: 0.5rem;    /* 8px */
+            --space-3: 0.75rem;   /* 12px */
+            --space-4: 1rem;      /* 16px */
+            --space-5: 1.25rem;   /* 20px */
+            --space-6: 1.5rem;    /* 24px */
+            --space-8: 2rem;      /* 32px */
+            --space-10: 2.5rem;   /* 40px */
+            --space-12: 3rem;     /* 48px */
+            --space-16: 4rem;     /* 64px */
+
+            /* Border Radius */
+            --radius-sm: 0.25rem;   /* 4px */
+            --radius-md: 0.5rem;    /* 8px */
+            --radius-lg: 0.75rem;   /* 12px */
+            --radius-xl: 1rem;      /* 16px */
+            --radius-2xl: 1.5rem;   /* 24px */
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+            /* Transitions */
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Dark Mode Variables */
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --gray-50: #1e293b;
+            --gray-100: #334155;
+            --gray-200: #475569;
+            --gray-300: #64748b;
+            --gray-400: #94a3b8;
+            --gray-500: #cbd5e1;
+            --gray-600: #e2e8f0;
+            --gray-700: #f1f5f9;
+            --gray-800: #f8fafc;
+            --gray-900: #ffffff;
+        }
+
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--bg-secondary);
+            color: var(--gray-800);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Chart Container Styles */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: var(--space-4) 0;
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-4);
+        }
+
+        .chart-title {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: var(--space-2);
+            align-items: center;
+        }
+
+        .chart-time-selector {
+            display: flex;
+            background: var(--gray-100);
+            border-radius: var(--radius-md);
+            padding: var(--space-1);
+            gap: var(--space-1);
+        }
+
+        .chart-time-btn {
+            padding: var(--space-1) var(--space-3);
+            border: none;
+            background: transparent;
+            color: var(--gray-600);
+            font-size: var(--text-xs);
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .chart-time-btn:hover {
+            background: var(--gray-200);
+            color: var(--gray-800);
+        }
+
+        .chart-time-btn.active {
+            background: var(--primary-500);
+            color: white;
+        }
+
+        .chart-canvas-wrapper {
+            position: relative;
+            height: 250px;
+        }
+
+        .chart-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .chart-loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--gray-200);
+            border-top: 4px solid var(--primary-500);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Metrics Dashboard Enhancements */
+        .metrics-enhanced {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-6);
+            margin-bottom: var(--space-8);
+        }
+
+        .metric-card-enhanced {
+            background: var(--bg-primary);
+            padding: var(--space-6);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition-normal);
+            border: 1px solid var(--gray-200);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card-enhanced::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-500), var(--primary-600));
+        }
+
+        .metric-card-enhanced.success::before {
+            background: linear-gradient(90deg, var(--success), #047857);
+        }
+
+        .metric-card-enhanced.warning::before {
+            background: linear-gradient(90deg, var(--warning), #b45309);
+        }
+
+        .metric-card-enhanced.error::before {
+            background: linear-gradient(90deg, var(--error), #b91c1c);
+        }
+
+        .metric-card-enhanced:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .metric-header-enhanced {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-4);
+        }
+
+        .metric-info {
+            flex: 1;
+        }
+
+        .metric-icon-enhanced {
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-lg);
+            font-size: var(--text-2xl);
+            margin-left: var(--space-4);
+        }
+
+        .metric-value-enhanced {
+            font-size: var(--text-3xl);
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: var(--space-1);
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-2);
+        }
+
+        .metric-unit {
+            font-size: var(--text-lg);
+            font-weight: 400;
+            color: var(--gray-500);
+        }
+
+        .metric-trend {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: var(--text-sm);
+            font-weight: 500;
+            padding: var(--space-1) var(--space-2);
+            border-radius: var(--radius-md);
+            margin-top: var(--space-2);
+        }
+
+        .metric-trend.positive {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .metric-trend.negative {
+            background: var(--error-light);
+            color: var(--error);
+        }
+
+        .metric-trend.neutral {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+        .metric-sparkline {
+            margin-top: var(--space-3);
+            height: 40px;
+        }
+
+        /* Alert System Styles */
+        .alerts-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+            pointer-events: none;
+        }
+
+        .alert-item {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            margin-bottom: var(--space-3);
+            box-shadow: var(--shadow-lg);
+            border-left: 4px solid var(--info);
+            pointer-events: all;
+            animation: slideInRight var(--transition-normal);
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-3);
+            position: relative;
+        }
+
+        .alert-item.critical {
+            border-left-color: var(--error);
+            background: var(--error-light);
+        }
+
+        .alert-item.warning {
+            border-left-color: var(--warning);
+            background: var(--warning-light);
+        }
+
+        .alert-item.success {
+            border-left-color: var(--success);
+            background: var(--success-light);
+        }
+
+        .alert-icon {
+            font-size: var(--text-lg);
+            flex-shrink: 0;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: var(--space-1);
+        }
+
+        .alert-message {
+            font-size: var(--text-sm);
+            color: var(--gray-700);
+        }
+
+        .alert-close {
+            background: none;
+            border: none;
+            color: var(--gray-500);
+            cursor: pointer;
+            font-size: var(--text-lg);
+            padding: 0;
+            line-height: 1;
+        }
+
+        .alert-close:hover {
+            color: var(--gray-700);
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Workflow Visualization */
+        .workflow-visualization {
+            background: var(--bg-primary);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--gray-200);
+            margin-bottom: var(--space-6);
+        }
+
+        .workflow-stages {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            padding: var(--space-6) 0;
+        }
+
+        .workflow-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            z-index: 2;
+            flex: 1;
+            position: relative;
+        }
+
+        .workflow-stage-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-2xl);
+            margin-bottom: var(--space-3);
+            border: 3px solid var(--gray-200);
+            background: var(--bg-primary);
+            transition: all var(--transition-normal);
+        }
+
+        .workflow-stage.completed .workflow-stage-icon {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
+        .workflow-stage.active .workflow-stage-icon {
+            background: var(--primary-500);
+            color: white;
+            border-color: var(--primary-500);
+            animation: pulse 2s infinite;
+        }
+
+        .workflow-stage.pending .workflow-stage-icon {
+            background: var(--gray-200);
+            color: var(--gray-500);
+            border-color: var(--gray-300);
+        }
+
+        .workflow-stage.failed .workflow-stage-icon {
+            background: var(--error);
+            color: white;
+            border-color: var(--error);
+        }
+
+        .workflow-stage-name {
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: var(--space-2);
+            font-size: var(--text-sm);
+        }
+
+        .workflow-stage-status {
+            font-size: var(--text-xs);
+            color: var(--gray-600);
+        }
+
+        .workflow-progress-line {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: var(--gray-200);
+            z-index: 1;
+            transform: translateY(-50%);
+        }
+
+        .workflow-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), var(--primary-500));
+            border-radius: 3px;
+            transition: width var(--transition-slow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .workflow-progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.4),
+                transparent
+            );
+            animation: shimmer 2s infinite;
+        }
+
+        /* Performance Gauge */
+        .performance-gauge {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: var(--space-6);
+            background: var(--bg-primary);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--gray-200);
+        }
+
+        .gauge-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .gauge-circle {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto var(--space-3);
+            position: relative;
+        }
+
+        .gauge-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: var(--text-2xl);
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .gauge-label {
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: var(--space-1);
+        }
+
+        .gauge-description {
+            font-size: var(--text-xs);
+            color: var(--gray-500);
+        }
+
+        /* Enhanced Chat with Markdown */
+        .chat-message-enhanced {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            margin-bottom: var(--space-3);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+        }
+
+        .chat-message-enhanced.user {
+            margin-left: var(--space-8);
+            border-left: 4px solid var(--primary-500);
+        }
+
+        .chat-message-enhanced.agent {
+            margin-right: var(--space-8);
+            border-left: 4px solid var(--success);
+        }
+
+        .chat-message-enhanced.system {
+            border-left: 4px solid var(--info);
+            background: var(--info-light);
+        }
+
+        .chat-message-enhanced.error {
+            border-left: 4px solid var(--error);
+            background: var(--error-light);
+        }
+
+        .chat-message-content {
+            font-size: var(--text-sm);
+            line-height: 1.6;
+            color: var(--gray-800);
+        }
+
+        .chat-message-content h1,
+        .chat-message-content h2,
+        .chat-message-content h3 {
+            color: var(--gray-900);
+            margin-bottom: var(--space-2);
+        }
+
+        .chat-message-content code {
+            background: var(--gray-100);
+            padding: var(--space-1) var(--space-2);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+        }
+
+        .chat-message-content pre {
+            background: var(--gray-100);
+            padding: var(--space-4);
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            margin: var(--space-3) 0;
+        }
+
+        .chat-message-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Responsive Design for Charts */
+        @media (max-width: 768px) {
+            .metrics-enhanced {
+                grid-template-columns: 1fr;
+                gap: var(--space-4);
+            }
+
+            .chart-container {
+                height: 250px;
+                padding: var(--space-3);
+            }
+
+            .chart-canvas-wrapper {
+                height: 200px;
+            }
+
+            .workflow-stages {
+                flex-direction: column;
+                gap: var(--space-4);
+            }
+
+            .workflow-progress-line {
+                width: 3px;
+                height: 100%;
+                left: 50%;
+                top: 10%;
+                bottom: 10%;
+                right: auto;
+                transform: translateX(-50%);
+            }
+
+            .workflow-progress-fill {
+                width: 100%;
+                height: 0%;
+                top: auto;
+                bottom: 0;
+            }
+
+            .performance-gauge {
+                flex-direction: column;
+                gap: var(--space-6);
+            }
+
+            .alerts-container {
+                left: 10px;
+                right: 10px;
+                max-width: none;
+            }
+        }
+
+        /* Loading and Animation Utilities */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .fade-in {
+            animation: fadeIn var(--transition-normal);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Enhanced Alert System -->
+    <div class="alerts-container" id="alerts-container"></div>
+
+    <!-- Header -->
+    <header class="header" role="banner">
+        <div class="header-content">
+            <div class="header-title">
+                <h1>🤖 El Jefe</h1>
+                <span class="text-gray-500 text-sm">Analytics Command Center</span>
+            </div>
+
+            <div class="search-container">
+                <span class="search-icon" aria-hidden="true">🔍</span>
+                <input
+                    type="search"
+                    class="search-input"
+                    placeholder="Search agents, workflows, or metrics..."
+                    aria-label="Search"
+                />
+            </div>
+
+            <div class="header-controls">
+                <div class="connection-status connected" id="connection-status">
+                    <span class="connection-dot"></span>
+                    <span>Connected</span>
+                </div>
+
+                <div class="header-actions">
+                    <button class="btn btn-icon" onclick="toggleTheme()" aria-label="Toggle theme">
+                        <span id="theme-icon">🌙</span>
+                    </button>
+                    <button class="btn btn-icon" onclick="showNotifications()" aria-label="Notifications">
+                        <span>🔔</span>
+                    </button>
+                    <button class="btn btn-icon" onclick="showSettings()" aria-label="Settings">
+                        <span>⚙️</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="refreshAllData()">
+                        <span>🔄</span>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <nav class="tab-nav" role="tablist" aria-label="Dashboard sections">
+        <div class="tab-nav-container">
+            <ul class="tab-list">
+                <li>
+                    <button
+                        class="tab-button active"
+                        role="tab"
+                        aria-selected="true"
+                        aria-controls="overview-tab"
+                        data-tab="overview"
+                        onclick="switchTab('overview')"
+                    >
+                        <span class="tab-icon">📊</span>
+                        <span>Analytics</span>
+                    </button>
+                </li>
+                <li>
+                    <button
+                        class="tab-button"
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="performance-tab"
+                        data-tab="performance"
+                        onclick="switchTab('performance')"
+                    >
+                        <span class="tab-icon">⚡</span>
+                        <span>Performance</span>
+                    </button>
+                </li>
+                <li>
+                    <button
+                        class="tab-button"
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="agents-tab"
+                        data-tab="agents"
+                        onclick="switchTab('agents')"
+                    >
+                        <span class="tab-icon">🤖</span>
+                        <span>Agents</span>
+                    </button>
+                </li>
+                <li>
+                    <button
+                        class="tab-button"
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="workflows-tab"
+                        data-tab="workflows"
+                        onclick="switchTab('workflows')"
+                    >
+                        <span class="tab-icon">📋</span>
+                        <span>Workflows</span>
+                    </button>
+                </li>
+                <li>
+                    <button
+                        class="tab-button"
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="chat-tab"
+                        data-tab="chat"
+                        onclick="switchTab('chat')"
+                    >
+                        <span class="tab-icon">💬</span>
+                        <span>Chat</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container" id="main-content" role="main">
+        <!-- Analytics Tab (New Default) -->
+        <section id="overview-tab" class="tab-content active" role="tabpanel">
+            <!-- Enhanced Metrics with Charts -->
+            <div class="metrics-enhanced">
+                <div class="metric-card-enhanced success">
+                    <div class="metric-header-enhanced">
+                        <div class="metric-info">
+                            <div class="metric-value-enhanced">
+                                <span id="success-rate">98.5</span>
+                                <span class="metric-unit">%</span>
+                            </div>
+                            <div class="metric-label">Success Rate</div>
+                            <div class="metric-trend positive">
+                                <span>↑</span>
+                                <span>2.1% from yesterday</span>
+                            </div>
+                        </div>
+                        <div class="metric-icon-enhanced success">✅</div>
+                    </div>
+                    <div class="metric-sparkline">
+                        <canvas id="success-rate-sparkline"></canvas>
+                    </div>
+                </div>
+
+                <div class="metric-card-enhanced">
+                    <div class="metric-header-enhanced">
+                        <div class="metric-info">
+                            <div class="metric-value-enhanced">
+                                <span id="response-time">24.3</span>
+                                <span class="metric-unit">s</span>
+                            </div>
+                            <div class="metric-label">Avg Response Time</div>
+                            <div class="metric-trend positive">
+                                <span>↓</span>
+                                <span>1.8s faster than last week</span>
+                            </div>
+                        </div>
+                        <div class="metric-icon-enhanced primary">⚡</div>
+                    </div>
+                    <div class="metric-sparkline">
+                        <canvas id="response-time-sparkline"></canvas>
+                    </div>
+                </div>
+
+                <div class="metric-card-enhanced warning">
+                    <div class="metric-header-enhanced">
+                        <div class="metric-info">
+                            <div class="metric-value-enhanced">
+                                <span>$12.45</span>
+                                <span class="metric-unit">/hr</span>
+                            </div>
+                            <div class="metric-label">Cost Rate</div>
+                            <div class="metric-trend negative">
+                                <span>↑</span>
+                                <span>5.2% increase this week</span>
+                            </div>
+                        </div>
+                        <div class="metric-icon-enhanced warning">💰</div>
+                    </div>
+                    <div class="metric-sparkline">
+                        <canvas id="cost-sparkline"></canvas>
+                    </div>
+                </div>
+
+                <div class="metric-card-enhanced">
+                    <div class="metric-header-enhanced">
+                        <div class="metric-info">
+                            <div class="metric-value-enhanced">
+                                <span id="active-agents">7</span>
+                                <span class="metric-unit">active</span>
+                            </div>
+                            <div class="metric-label">Active Agents</div>
+                            <div class="metric-trend neutral">
+                                <span>→</span>
+                                <span>Same as last hour</span>
+                            </div>
+                        </div>
+                        <div class="metric-icon-enhanced primary">🤖</div>
+                    </div>
+                    <div class="metric-sparkline">
+                        <canvas id="agents-sparkline"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Gauges -->
+            <div class="performance-gauge mb-6">
+                <div class="gauge-item">
+                    <div class="gauge-circle">
+                        <canvas id="system-health-gauge"></canvas>
+                        <div class="gauge-value">95%</div>
+                    </div>
+                    <div class="gauge-label">System Health</div>
+                    <div class="gauge-description">Overall system performance</div>
+                </div>
+
+                <div class="gauge-item">
+                    <div class="gauge-circle">
+                        <canvas id="efficiency-gauge"></canvas>
+                        <div class="gauge-value">87%</div>
+                    </div>
+                    <div class="gauge-label">Efficiency</div>
+                    <div class="gauge-description">Resource utilization rate</div>
+                </div>
+
+                <div class="gauge-item">
+                    <div class="gauge-circle">
+                        <canvas id="throughput-gauge"></canvas>
+                        <div class="gauge-value">142</div>
+                    </div>
+                    <div class="gauge-label">Throughput</div>
+                    <div class="gauge-description">Tasks per hour</div>
+                </div>
+
+                <div class="gauge-item">
+                    <div class="gauge-circle">
+                        <canvas id="reliability-gauge"></canvas>
+                        <div class="gauge-value">99.2%</div>
+                    </div>
+                    <div class="gauge-label">Reliability</div>
+                    <div class="gauge-description">Uptime percentage</div>
+                </div>
+            </div>
+
+            <!-- Real-time Charts -->
+            <div class="metrics-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <span>📈</span>
+                            <span>Agent Activity Timeline</span>
+                        </h2>
+                        <div class="chart-controls">
+                            <div class="chart-time-selector">
+                                <button class="chart-time-btn active" onclick="setTimeRange('1h')">1H</button>
+                                <button class="chart-time-btn" onclick="setTimeRange('6h')">6H</button>
+                                <button class="chart-time-btn" onclick="setTimeRange('24h')">1D</button>
+                                <button class="chart-time-btn" onclick="setTimeRange('7d')">1W</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="chart-container">
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="agent-activity-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <span>📊</span>
+                            <span>Workflow Performance</span>
+                        </h2>
+                        <div class="chart-controls">
+                            <select class="btn" onchange="updateWorkflowChart(this.value)">
+                                <option value="completion-time">Completion Time</option>
+                                <option value="success-rate">Success Rate</option>
+                                <option value="agent-utilization">Agent Utilization</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="chart-container">
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="workflow-performance-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resource Usage Chart -->
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>💻</span>
+                        <span>System Resource Usage</span>
+                    </h2>
+                    <div class="chart-controls">
+                        <div class="chart-time-selector">
+                            <button class="chart-time-btn active" onclick="setResourceTimeRange('real-time')">Real-time</button>
+                            <button class="chart-time-btn" onclick="setResourceTimeRange('1h')">1 Hour</button>
+                            <button class="chart-time-btn" onclick="setResourceTimeRange('6h')">6 Hours</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <div class="chart-canvas-wrapper" style="height: 350px;">
+                            <canvas id="resource-usage-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Workflow Visualization -->
+            <div class="workflow-visualization mb-6">
+                <div class="card-header" style="padding: 0; margin-bottom: var(--space-6);">
+                    <h2 class="card-title">
+                        <span>🔄</span>
+                        <span>Active Workflow Pipeline</span>
+                    </h2>
+                </div>
+
+                <div class="workflow-stages" id="workflow-pipeline">
+                    <div class="workflow-progress-line">
+                        <div class="workflow-progress-fill" style="width: 45%;"></div>
+                    </div>
+
+                    <div class="workflow-stage completed">
+                        <div class="workflow-stage-icon">✓</div>
+                        <div class="workflow-stage-name">Planning</div>
+                        <div class="workflow-stage-status">Completed</div>
+                    </div>
+
+                    <div class="workflow-stage completed">
+                        <div class="workflow-stage-icon">✓</div>
+                        <div class="workflow-stage-name">Research</div>
+                        <div class="workflow-stage-status">Completed</div>
+                    </div>
+
+                    <div class="workflow-stage active">
+                        <div class="workflow-stage-icon">⚡</div>
+                        <div class="workflow-stage-name">Analysis</div>
+                        <div class="workflow-stage-status">In Progress</div>
+                    </div>
+
+                    <div class="workflow-stage pending">
+                        <div class="workflow-stage-icon">⏸️</div>
+                        <div class="workflow-stage-name">Writing</div>
+                        <div class="workflow-stage-status">Pending</div>
+                    </div>
+
+                    <div class="workflow-stage pending">
+                        <div class="workflow-stage-icon">⏸️</div>
+                        <div class="workflow-stage-name">Review</div>
+                        <div class="workflow-stage-status">Pending</div>
+                    </div>
+
+                    <div class="workflow-stage pending">
+                        <div class="workflow-stage-icon">⏸️</div>
+                        <div class="workflow-stage-name">Deployment</div>
+                        <div class="workflow-stage-status">Pending</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Performance Tab -->
+        <section id="performance-tab" class="tab-content" role="tabpanel">
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>🎯</span>
+                        <span>Performance Benchmarks</span>
+                    </h2>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <div class="chart-canvas-wrapper" style="height: 400px;">
+                            <canvas id="performance-benchmark-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Agents Tab (Enhanced with Charts) -->
+        <section id="agents-tab" class="tab-content" role="tabpanel">
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>🤖</span>
+                        <span>Agent Performance Analytics</span>
+                    </h2>
+                    <div style="display: flex; gap: var(--space-2);">
+                        <select class="btn" onchange="filterAgents(this.value)" aria-label="Filter agents">
+                            <option value="all">All Agents</option>
+                            <option value="running">Running</option>
+                            <option value="completed">Completed</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                        <button class="btn" onclick="refreshAgents()">
+                            <span>🔄</span>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="agent-performance-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>📊</span>
+                        <span>Agent Details</span>
+                    </h2>
+                </div>
+                <div class="card-content">
+                    <div id="agents-list-enhanced" class="skeleton skeleton-card"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Workflows Tab (Enhanced) -->
+        <section id="workflows-tab" class="tab-content" role="tabpanel">
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>📈</span>
+                        <span>Workflow Analytics</span>
+                    </h2>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="workflow-analytics-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>📋</span>
+                        <span>Workflow Sessions</span>
+                    </h2>
+                    <div style="display: flex; gap: var(--space-2);">
+                        <button class="btn" onclick="startNewWorkflow()">
+                            <span>➕</span>
+                            <span>New Workflow</span>
+                        </button>
+                        <button class="btn" onclick="refreshWorkflows()">
+                            <span>🔄</span>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div id="workflows-list-enhanced" class="skeleton skeleton-card"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chat Tab (Enhanced with Markdown) -->
+        <section id="chat-tab" class="tab-content" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>💬</span>
+                        <span>Chat with El Jefe (Markdown Enabled)</span>
+                    </h2>
+                    <div style="display: flex; gap: var(--space-2);">
+                        <button class="btn" id="start-el-jefe-btn" onclick="startElJefe()">
+                            <span>🚀</span>
+                            <span>Start El Jefe</span>
+                        </button>
+                        <button class="btn" id="stop-el-jefe-btn" onclick="stopElJefe()" style="display: none;">
+                            <span>⏹️</span>
+                            <span>Stop El Jefe</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content" style="padding: 0;">
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chat-messages-enhanced"></div>
+                        <div class="chat-input-container">
+                            <input
+                                type="text"
+                                id="chat-input-enhanced"
+                                class="chat-input"
+                                placeholder="Type a message to El Jefe (Markdown supported)..."
+                                disabled
+                                onkeypress="handleChatKeyPress(event)"
+                            />
+                            <button
+                                id="send-btn-enhanced"
+                                class="chat-send-btn"
+                                onclick="sendChatMessage()"
+                                disabled
+                            >
+                                <span>📤</span>
+                                <span>Send</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Chart management
+        let charts = {};
+        let currentTimeRange = '1h';
+        let updateInterval;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initTheme();
+            initializeCharts();
+            connectWebSocket();
+            startRealTimeUpdates();
+        });
+
+        // Chart initialization
+        function initializeCharts() {
+            initializeSparklines();
+            initializeGauges();
+            initializeMainCharts();
+        }
+
+        // Sparkline charts
+        function initializeSparklines() {
+            // Success Rate Sparkline
+            charts.successRateSparkline = new Chart(document.getElementById('success-rate-sparkline'), {
+                type: 'line',
+                data: {
+                    labels: generateTimeLabels(24),
+                    datasets: [{
+                        data: generateSparklineData(24, 95, 99),
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 3
+                    }]
+                },
+                options: getSparklineOptions()
+            });
+
+            // Response Time Sparkline
+            charts.responseTimeSparkline = new Chart(document.getElementById('response-time-sparkline'), {
+                type: 'line',
+                data: {
+                    labels: generateTimeLabels(24),
+                    datasets: [{
+                        data: generateSparklineData(24, 20, 30),
+                        borderColor: '#0ea5e9',
+                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 3
+                    }]
+                },
+                options: getSparklineOptions()
+            });
+
+            // Cost Sparkline
+            charts.costSparkline = new Chart(document.getElementById('cost-sparkline'), {
+                type: 'line',
+                data: {
+                    labels: generateTimeLabels(24),
+                    datasets: [{
+                        data: generateSparklineData(24, 10, 15),
+                        borderColor: '#d97706',
+                        backgroundColor: 'rgba(217, 119, 6, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 3
+                    }]
+                },
+                options: getSparklineOptions()
+            });
+
+            // Agents Sparkline
+            charts.agentsSparkline = new Chart(document.getElementById('agents-sparkline'), {
+                type: 'line',
+                data: {
+                    labels: generateTimeLabels(24),
+                    datasets: [{
+                        data: generateSparklineData(24, 4, 10),
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 3
+                    }]
+                },
+                options: getSparklineOptions()
+            });
+        }
+
+        // Gauge charts
+        function initializeGauges() {
+            const gaugeOptions = {
+                type: 'doughnut',
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        animateScale: false
+                    }
+                }
+            };
+
+            // System Health Gauge
+            charts.systemHealthGauge = new Chart(document.getElementById('system-health-gauge'), {
+                ...gaugeOptions,
+                data: {
+                    datasets: [{
+                        data: [95, 5],
+                        backgroundColor: ['#059669', '#e5e7eb'],
+                        borderWidth: 0
+                    }]
+                }
+            });
+
+            // Efficiency Gauge
+            charts.efficiencyGauge = new Chart(document.getElementById('efficiency-gauge'), {
+                ...gaugeOptions,
+                data: {
+                    datasets: [{
+                        data: [87, 13],
+                        backgroundColor: ['#0ea5e9', '#e5e7eb'],
+                        borderWidth: 0
+                    }]
+                }
+            });
+
+            // Throughput Gauge
+            charts.throughputGauge = new Chart(document.getElementById('throughput-gauge'), {
+                ...gaugeOptions,
+                data: {
+                    datasets: [{
+                        data: [71, 29],
+                        backgroundColor: ['#8b5cf6', '#e5e7eb'],
+                        borderWidth: 0
+                    }]
+                }
+            });
+
+            // Reliability Gauge
+            charts.reliabilityGauge = new Chart(document.getElementById('reliability-gauge'), {
+                ...gaugeOptions,
+                data: {
+                    datasets: [{
+                        data: [99.2, 0.8],
+                        backgroundColor: ['#10b981', '#e5e7eb'],
+                        borderWidth: 0
+                    }]
+                }
+            });
+        }
+
+        // Main charts
+        function initializeMainCharts() {
+            // Agent Activity Timeline
+            charts.agentActivityChart = new Chart(document.getElementById('agent-activity-chart'), {
+                type: 'line',
+                data: {
+                    labels: generateTimeLabels(60),
+                    datasets: [
+                        {
+                            label: 'Active Agents',
+                            data: generateRandomData(60, 2, 12),
+                            borderColor: '#0ea5e9',
+                            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Completed Tasks',
+                            data: generateRandomData(60, 5, 25),
+                            borderColor: '#059669',
+                            backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Error Rate',
+                            data: generateRandomData(60, 0, 5),
+                            borderColor: '#dc2626',
+                            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: getLineChartOptions('Agent Activity Timeline')
+            });
+
+            // Workflow Performance
+            charts.workflowPerformanceChart = new Chart(document.getElementById('workflow-performance-chart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Research', 'Analysis', 'Writing', 'Review', 'Deployment'],
+                    datasets: [
+                        {
+                            label: 'Average Time (minutes)',
+                            data: [12, 18, 25, 8, 5],
+                            backgroundColor: '#0ea5e9'
+                        },
+                        {
+                            label: 'Optimal Time (minutes)',
+                            data: [10, 15, 20, 5, 3],
+                            backgroundColor: '#e5e7eb'
+                        }
+                    ]
+                },
+                options: getBarChartOptions('Workflow Performance Comparison')
+            });
+
+            // Resource Usage
+            charts.resourceUsageChart = new Chart(document.getElementById('resource-usage-chart'), {
+                type: 'line',
+                data: {
+                    labels: generateTimeLabels(120),
+                    datasets: [
+                        {
+                            label: 'CPU Usage (%)',
+                            data: generateRandomData(120, 20, 80),
+                            borderColor: '#059669',
+                            backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Memory Usage (GB)',
+                            data: generateRandomData(120, 4, 16),
+                            borderColor: '#0ea5e9',
+                            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'Network I/O (Mbps)',
+                            data: generateRandomData(120, 10, 100),
+                            borderColor: '#8b5cf6',
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: getResourceChartOptions()
+            });
+        }
+
+        // Chart options generators
+        function getSparklineOptions() {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#fff',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            };
+        }
+
+        function getLineChartOptions(title) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#fff',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 8
+                        }
+                    },
+                    y: {
+                        display: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        beginAtZero: true
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            };
+        }
+
+        function getBarChartOptions(title) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                }
+            };
+        }
+
+        function getResourceChartOptions() {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        title: {
+                            display: true,
+                            text: 'CPU %'
+                        },
+                        beginAtZero: true,
+                        max: 100
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Memory (GB) / Network (Mbps)'
+                        },
+                        beginAtZero: true
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            };
+        }
+
+        // Data generation helpers
+        function generateTimeLabels(count) {
+            const labels = [];
+            const now = new Date();
+            for (let i = count - 1; i >= 0; i--) {
+                const time = new Date(now - i * 60000); // 1 minute intervals
+                labels.push(time.toLocaleTimeString());
+            }
+            return labels;
+        }
+
+        function generateSparklineData(count, min, max) {
+            const data = [];
+            let current = (min + max) / 2;
+            for (let i = 0; i < count; i++) {
+                current += (Math.random() - 0.5) * (max - min) * 0.1;
+                current = Math.max(min, Math.min(max, current));
+                data.push(current);
+            }
+            return data;
+        }
+
+        function generateRandomData(count, min, max) {
+            const data = [];
+            for (let i = 0; i < count; i++) {
+                data.push(Math.random() * (max - min) + min);
+            }
+            return data;
+        }
+
+        // Real-time updates
+        function startRealTimeUpdates() {
+            updateInterval = setInterval(() => {
+                updateRealTimeCharts();
+            }, 3000); // Update every 3 seconds
+        }
+
+        function updateRealTimeCharts() {
+            // Update sparklines with new data point
+            Object.values(charts).forEach(chart => {
+                if (chart && chart.data && chart.data.datasets) {
+                    chart.data.datasets.forEach(dataset => {
+                        // Remove first point and add new point
+                        if (dataset.data.length > 0) {
+                            dataset.data.shift();
+                            const lastValue = dataset.data[dataset.data.length - 1];
+                            const newValue = lastValue + (Math.random() - 0.5) * 10;
+                            dataset.data.push(Math.max(0, newValue));
+                        }
+                    });
+                    chart.update('none'); // Update without animation for real-time feel
+                }
+            });
+
+            // Update metrics
+            updateMetrics();
+        }
+
+        // WebSocket connection (reusing from v2)
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+            window.ws = new WebSocket(wsUrl);
+            const statusEl = document.getElementById('connection-status');
+
+            window.ws.onopen = function() {
+                statusEl.className = 'connection-status connected';
+                statusEl.innerHTML = '<span class="connection-dot"></span><span>Connected</span>';
+                showAlert('Connected to El Jefe server', 'success');
+            };
+
+            window.ws.onclose = function() {
+                statusEl.className = 'connection-status disconnected';
+                statusEl.innerHTML = '<span class="connection-dot"></span><span>Disconnected</span>';
+                showAlert('Disconnected from El Jefe server', 'warning');
+            };
+
+            window.ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+        }
+
+        function handleWebSocketMessage(data) {
+            switch(data.type) {
+                case 'agent_update':
+                    updateAgentCharts(data);
+                    break;
+                case 'workflow_update':
+                    updateWorkflowCharts(data);
+                    break;
+                case 'alert':
+                    showAlert(data.message, data.level || 'info');
+                    break;
+            }
+        }
+
+        // Alert system
+        function showAlert(message, type = 'info', title = null) {
+            const alertsContainer = document.getElementById('alerts-container');
+            const alert = document.createElement('div');
+            alert.className = `alert-item ${type}`;
+
+            const iconMap = {
+                'critical': '🚨',
+                'warning': '⚠️',
+                'success': '✅',
+                'info': 'ℹ️'
+            };
+
+            alert.innerHTML = `
+                <div class="alert-icon">${iconMap[type] || iconMap.info}</div>
+                <div class="alert-content">
+                    ${title ? `<div class="alert-title">${title}</div>` : ''}
+                    <div class="alert-message">${message}</div>
+                </div>
+                <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+            `;
+
+            alertsContainer.appendChild(alert);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alert.parentElement) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        // Enhanced chat with Markdown support
+        function displayChatMessageEnhanced(message) {
+            const messagesContainer = document.getElementById('chat-messages-enhanced');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message-enhanced ${message.sender} fade-in`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'chat-message-content';
+
+            // Parse Markdown content
+            if (message.sender === 'el-jefe' || message.sender === 'system') {
+                const markdownContent = marked.parse(message.content);
+                contentDiv.innerHTML = DOMPurify.sanitize(markdownContent);
+            } else {
+                contentDiv.textContent = message.content;
+            }
+
+            messageDiv.appendChild(contentDiv);
+            messagesContainer.appendChild(messageDiv);
+
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Theme management (reusing from v2)
+        function initTheme() {
+            const savedTheme = localStorage.getItem('el-jefe-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('el-jefe-theme', newTheme);
+            updateThemeIcon(newTheme);
+
+            // Update chart colors for dark mode
+            updateChartTheme();
+        }
+
+        function updateThemeIcon(theme) {
+            document.getElementById('theme-icon').textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+
+        function updateChartTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const textColor = isDark ? '#e2e8f0' : '#374151';
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+
+            Object.values(charts).forEach(chart => {
+                if (chart && chart.options) {
+                    if (chart.options.scales) {
+                        Object.values(chart.options.scales).forEach(scale => {
+                            if (scale.ticks) scale.ticks.color = textColor;
+                            if (scale.grid) scale.grid.color = gridColor;
+                            if (scale.title && scale.title.color) scale.title.color = textColor;
+                        });
+                    }
+                    if (chart.options.plugins && chart.options.plugins.legend) {
+                        chart.options.plugins.legend.labels = {
+                            ...chart.options.plugins.legend.labels,
+                            color: textColor
+                        };
+                    }
+                    chart.update();
+                }
+            });
+        }
+
+        // Tab navigation
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                const isActive = button.getAttribute('data-tab') === tabName;
+                button.setAttribute('aria-selected', isActive);
+                button.classList.toggle('active', isActive);
+            });
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === `${tabName}-tab`);
+            });
+        }
+
+        // Placeholder functions for demo
+        function setTimeRange(range) {
+            currentTimeRange = range;
+            document.querySelectorAll('.chart-time-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            showAlert(`Time range set to ${range}`, 'info');
+        }
+
+        function setResourceTimeRange(range) {
+            showAlert(`Resource time range set to ${range}`, 'info');
+        }
+
+        function updateWorkflowChart(value) {
+            showAlert(`Workflow metric changed to ${value}`, 'info');
+        }
+
+        function filterAgents(status) {
+            showAlert(`Filtering agents: ${status}`, 'info');
+        }
+
+        function refreshAgents() {
+            showAlert('Refreshing agent data...', 'info');
+        }
+
+        function refreshWorkflows() {
+            showAlert('Refreshing workflow data...', 'info');
+        }
+
+        function startNewWorkflow() {
+            showAlert('Workflow creation interface coming soon!', 'info');
+        }
+
+        function showNotifications() {
+            showAlert('Notifications panel coming soon!', 'info');
+        }
+
+        function showSettings() {
+            showAlert('Settings panel coming soon!', 'info');
+        }
+
+        function refreshAllData() {
+            showAlert('Refreshing all data...', 'info');
+            updateRealTimeCharts();
+        }
+
+        function updateMetrics() {
+            // Update metric values with small random changes
+            const successRate = document.getElementById('success-rate');
+            if (successRate) {
+                const current = parseFloat(successRate.textContent);
+                const newValue = Math.max(90, Math.min(100, current + (Math.random() - 0.5) * 2));
+                successRate.textContent = newValue.toFixed(1);
+            }
+        }
+
+        function updateAgentCharts(data) {
+            // Update agent-specific charts
+            console.log('Agent update received:', data);
+        }
+
+        function updateWorkflowCharts(data) {
+            // Update workflow-specific charts
+            console.log('Workflow update received:', data);
+        }
+
+        // Chat functions (reusing from v2 with Markdown support)
+        let elJefeActive = false;
+
+        function startElJefe() {
+            if (elJefeActive || !window.ws) return;
+
+            window.ws.send(JSON.stringify({ type: 'start_el_jefe' }));
+            elJefeActive = true;
+
+            document.getElementById('start-el-jefe-btn').style.display = 'none';
+            document.getElementById('stop-el-jefe-btn').style.display = 'flex';
+            document.getElementById('chat-input-enhanced').disabled = false;
+            document.getElementById('send-btn-enhanced').disabled = false;
+
+            displayChatMessageEnhanced({
+                sender: 'system',
+                content: '🚀 **El Jefe is starting up...**\n\n*Markdown support is now enabled!*',
+                timestamp: new Date().toISOString(),
+                message_type: 'system'
+            });
+        }
+
+        function stopElJefe() {
+            if (!elJefeActive || !window.ws) return;
+
+            window.ws.send(JSON.stringify({ type: 'stop_el_jefe' }));
+            elJefeActive = false;
+
+            document.getElementById('start-el-jefe-btn').style.display = 'flex';
+            document.getElementById('stop-el-jefe-btn').style.display = 'none';
+            document.getElementById('chat-input-enhanced').disabled = true;
+            document.getElementById('send-btn-enhanced').disabled = true;
+
+            displayChatMessageEnhanced({
+                sender: 'system',
+                content: '⏹️ **El Jefe has been stopped**',
+                timestamp: new Date().toISOString(),
+                message_type: 'system'
+            });
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input-enhanced');
+            const message = input.value.trim();
+
+            if (!message || !elJefeActive || !window.ws) return;
+
+            // Display user message
+            displayChatMessageEnhanced({
+                sender: 'user',
+                content: message,
+                timestamp: new Date().toISOString(),
+                message_type: 'text'
+            });
+
+            // Send via WebSocket
+            window.ws.send(JSON.stringify({
+                type: 'chat_message',
+                message: message
+            }));
+
+            input.value = '';
+            input.focus();
+        }
+
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendChatMessage();
+            }
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+            if (window.ws) {
+                window.ws.close();
+            }
+        });
+    </script>
+</body>
+</html>
