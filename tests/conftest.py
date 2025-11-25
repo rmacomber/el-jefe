@@ -19,14 +19,16 @@ from monitoring_dashboard import MonitoringDashboard
 dashboard = MonitoringDashboard()
 
 @pytest.fixture
-def client():
-    """Create a test client for the Flask app"""
-    app.config['TESTING'] = True
-    app.config['WTF_CSRF_ENABLED'] = False
+async def client():
+    """Create a test client for the aiohttp app"""
+    from aiohttp.test import TestServer, TestClient
+    from monitoring_dashboard import MonitoringDashboard
 
-    with app.test_client() as client:
-        with app.app_context():
-            yield client
+    dashboard = MonitoringDashboard()
+    app = dashboard.app
+
+    async with TestClient(app) as test_client:
+        yield test_client
 
 @pytest.fixture
 def auth_headers():

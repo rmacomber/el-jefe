@@ -46,21 +46,21 @@ def run_command(cmd, description, timeout=300):
 def run_unit_tests():
     """Run unit tests with pytest"""
     return run_command(
-        "python -m pytest tests/test_dashboard_functionality.py -v --tb=short",
+        "python3 -m pytest tests/test_dashboard_functionality.py -v --tb=short",
         "Unit Tests"
     )
 
 def run_integration_tests():
     """Run integration tests"""
     return run_command(
-        "python -m pytest tests/test_functionality_validation.py -v --tb=short",
+        "python3 -m pytest tests/test_functionality_validation.py -v --tb=short",
         "Integration Tests"
     )
 
 def run_e2e_tests():
     """Run end-to-end tests with Playwright"""
     return run_command(
-        "python -m pytest tests/test_end_to_end.py -v --tb=short --browser chromium",
+        "python3 -m pytest tests/test_end_to_end.py -v --tb=short --browser chromium",
         "End-to-End Tests",
         timeout=600
     )
@@ -71,7 +71,7 @@ def run_performance_tests():
     print("Note: Locust will run in headless mode. For web UI, run manually.")
 
     return run_command(
-        "locust -f tests/locustfile.py --headless --users 20 --spawn-rate 5 --run-time 60s --host http://localhost:5000",
+        "locust -f tests/locustfile.py --headless --users 20 --spawn-rate 5 --run-time 60s --host http://localhost:8080",
         "Performance Tests",
         timeout=120
     )
@@ -79,7 +79,7 @@ def run_performance_tests():
 def run_security_tests():
     """Run security-focused tests"""
     return run_command(
-        "python -m pytest tests/test_dashboard_functionality.py::TestAuthenticationSecurity -v --tb=short",
+        "python3 -m pytest tests/test_dashboard_functionality.py::TestAuthenticationSecurity -v --tb=short",
         "Security Tests"
     )
 
@@ -87,7 +87,7 @@ def check_dashboard_running():
     """Check if the dashboard is running"""
     try:
         import requests
-        response = requests.get("http://localhost:5000", timeout=5)
+        response = requests.get("http://localhost:8080", timeout=5)
         return response.status_code in [200, 401]  # 401 is expected (requires auth)
     except:
         return False
