@@ -38,3 +38,7 @@ pre-commit>=3.3.0            # Git hooks
 # Security (optional)
 bandit>=1.7.0                # Security linter
 safety>=2.3.0                # Dependency vulnerability scanner
+
+# Monitoring Dashboard Dependencies
+websockets>=11.0.0           # WebSocket support for real-time updates
+aiohttp-cors>=0.7.0          # CORS support for aiohttp

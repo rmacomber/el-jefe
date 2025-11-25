@@ -38,7 +38,73 @@ pip install -r requirements.txt
 ```
 
 ### Testing and Debugging
-No formal test suite exists. Test agents by:
+
+#### El Jefe Dashboard Testing Suite
+
+The El Jefe monitoring dashboard has a comprehensive web application testing suite installed and configured:
+
+**Quick Validation:**
+```bash
+# Run basic setup validation
+pytest tests/test_basic.py -v
+```
+
+**Full Test Suite:**
+```bash
+# Run all dashboard tests (requires dashboard running on localhost:8080)
+python3 tests/run_tests.py --test-type all
+```
+
+**Individual Test Types:**
+```bash
+# Unit tests only
+python3 tests/run_tests.py --test-type unit
+
+# End-to-end browser tests
+python3 tests/run_tests.py --test-type e2e
+
+# Performance and load testing
+python3 tests/run_tests.py --test-type performance
+
+# Security validation tests
+python3 tests/run_tests.py --test-type security
+```
+
+**Load Testing with Locust:**
+```bash
+# Performance testing with 20 concurrent users for 60 seconds
+locust -f tests/locustfile.py --headless --users 20 --run-time 60s --host http://localhost:8080
+
+# Interactive web interface for load testing
+locust -f tests/locustfile.py --host http://localhost:8080
+# Visit http://localhost:8089 for web interface
+```
+
+**Cross-Browser Testing:**
+```bash
+# Run E2E tests on specific browsers
+pytest tests/test_end_to_end.py --browser chromium
+pytest tests/test_end_to_end.py --browser firefox
+pytest tests/test_end_to_end.py --browser webkit
+```
+
+**Dashboard Requirements:**
+- Dashboard must be running on http://localhost:8080
+- Authentication: eljefe_admin (configured automatically)
+- Dependencies: pytest, playwright, locust (all installed)
+
+**Test Coverage:**
+- API endpoints and authentication
+- Workflow assignment and execution
+- Chat interface and file uploads
+- Cross-browser compatibility
+- Mobile responsive design
+- Performance and load testing
+- Security validation (XSS, SQL injection)
+- Accessibility compliance (WCAG 2.1 AA)
+
+#### Agent Testing
+Test individual orchestrator agents:
 ```python
 # Import and test individual agent functions
 from agents.researcher_agent import run_researcher_agent

@@ -1,0 +1,100 @@
+{
+  "test_settings": {
+    "dashboard_url": "http://localhost:8080",
+    "default_timeout": 30000,
+    "slow_timeout": 60000,
+    "retry_attempts": 3,
+    "headless_mode": true,
+    "browser_versions": ["chromium", "firefox", "webkit"]
+  },
+  "performance_thresholds": {
+    "page_load_time": 3000,
+    "api_response_time": 1000,
+    "chart_render_time": 2000,
+    "concurrent_users": 50,
+    "memory_limit_mb": 512,
+    "cpu_limit_percent": 80
+  },
+  "authentication": {
+    "username": "eljefe_admin",
+    "password": "eljefe_admin",
+    "test_invalid_credentials": true
+  },
+  "endpoints": {
+    "dashboard": "/",
+    "workflows": "/api/workflows",
+    "analytics": "/api/analytics",
+    "agents": "/api/agents",
+    "chat": "/api/chat",
+    "upload": "/api/upload",
+    "logs": "/api/logs",
+    "debug": "/api/debug"
+  },
+  "test_data": {
+    "workflow_types": ["feature-development", "security-audit", "documentation-update", "debugging-session", "deployment-prep"],
+    "priorities": ["low", "medium", "high"],
+    "test_messages": [
+      "I need to perform a security audit",
+      "Can you help me implement user authentication?",
+      "I found a bug that needs fixing",
+      "We need to update the API documentation",
+      "Prepare the deployment pipeline"
+    ],
+    "test_files": [
+      "test_document.txt",
+      "requirements.txt",
+      "config.json",
+      "log_file.log"
+    ]
+  },
+  "security_tests": {
+    "xss_payloads": [
+      "<script>alert('xss')</script>",
+      "javascript:alert('xss')",
+      "onmouseover=alert('xss')",
+      "';alert('xss');//"
+    ],
+    "sql_injection_payloads": [
+      "'; DROP TABLE users; --",
+      "1' OR '1'='1",
+      "UNION SELECT * FROM users"
+    ],
+    "path_traversal_payloads": [
+      "../../../etc/passwd",
+      "..\\..\\..\\windows\\system32",
+      "....//....//....//etc/passwd"
+    ]
+  },
+  "load_testing": {
+    "users": {
+      "light": 10,
+      "medium": 50,
+      "heavy": 100
+    },
+    "spawn_rate": 5,
+    "duration": "5m",
+    "ramp_up": "1m"
+  },
+  "accessibility": {
+    "wcag_level": "AA",
+    "test_color_contrast": true,
+    "test_keyboard_navigation": true,
+    "test_screen_reader": true,
+    "minimum_font_size": 14
+  },
+  "responsive_design": {
+    "breakpoints": [
+      {"name": "mobile", "width": 375, "height": 667},
+      {"name": "tablet", "width": 768, "height": 1024},
+      {"name": "desktop", "width": 1920, "height": 1080}
+    ],
+    "test_orientations": ["portrait", "landscape"]
+  },
+  "reporting": {
+    "output_dir": "test_results",
+    "generate_html_report": true,
+    "generate_json_report": true,
+    "include_screenshots": true,
+    "include_performance_metrics": true
+  }
+}
