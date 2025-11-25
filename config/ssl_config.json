@@ -1,0 +1,18 @@
+{
+  "ssl_enabled": false,
+  "ssl_context": {
+    "certfile": "/path/to/ssl/cert.pem",
+    "keyfile": "/path/to/ssl/key.pem",
+    "cafile": "/path/to/ssl/ca.pem",
+    "password": null
+  },
+  "ssl_options": {
+    "ssl_version": "TLSv1_2",
+    "cipher_suites": [
+      "TLS_AES_256_GCM_SHA384",
+      "TLS_CHACHA20_POLY1305_SHA256",
+      "TLS_AES_128_GCM_SHA256"
+    ],
+    "require_client_cert": false
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "workflow_ids": {
+    "allowed_values": [
+      "feature-development",
+      "security-audit",
+      "documentation-update",
+      "debugging-session",
+      "deployment-prep"
+    ],
+    "validation": "strict_enum"
+  },
+  "session_ids": {
+    "pattern": "^[a-zA-Z0-9_-]+$",
+    "min_length": 1,
+    "max_length": 100,
+    "validation": "regex"
+  },
+  "chat_messages": {
+    "min_length": 1,
+    "max_length": 10000,
+    "sanitization": "html_strip",
+    "validation": "length"
+  },
+  "file_names": {
+    "pattern": "^[a-zA-Z0-9._-]+$",
+    "max_length": 255,
+    "blocked_patterns": [
+      "../",
+      "..\\",
+      "~",
+      "/etc/",
+      "/var/"
+    ],
+    "validation": "regex"
+  },
+  "api_keys": {
+    "min_length": 32,
+    "pattern": "^[a-zA-Z0-9+/=]+$",
+    "validation": "regex"
+  }
+}

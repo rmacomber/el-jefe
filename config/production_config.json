@@ -1,0 +1,29 @@
+{
+  "environment": "production",
+  "debug": false,
+  "auto_reload": false,
+  "workers": 4,
+  "max_requests": 1000,
+  "max_requests_jitter": 100,
+  "timeout": 30,
+  "keepalive_timeout": 2,
+  "graceful_shutdown_timeout": 30,
+  "metrics": {
+    "enabled": true,
+    "endpoint": "/metrics",
+    "include_system_metrics": true,
+    "include_process_metrics": true
+  },
+  "health_check": {
+    "enabled": true,
+    "endpoint": "/health",
+    "detailed": false,
+    "include_dependencies": true
+  },
+  "backup": {
+    "enabled": true,
+    "directory": "./backups",
+    "retention_days": 30,
+    "compression": true
+  }
+}

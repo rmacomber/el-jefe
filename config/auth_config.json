@@ -1,0 +1,14 @@
+{
+  "dashboard_password": "4jTbZpCcUozzR5bIqs5uHrkITueT3EBrd5AP6Iqutxs",
+  "auth_token": "599cd971903781b5dffc8daa15c0084438d25bb832cd4d4978397622e2694481",
+  "session_timeout": 3600,
+  "max_login_attempts": 5,
+  "lockout_duration": 300,
+  "password_requirements": {
+    "min_length": 16,
+    "require_uppercase": true,
+    "require_lowercase": true,
+    "require_numbers": true,
+    "require_special": true
+  }
+}

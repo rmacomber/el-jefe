@@ -1,0 +1,29 @@
+{
+  "websocket_connections": {
+    "max_connections": 100,
+    "connection_rate_limit": "10/minute",
+    "message_rate_limit": "60/minute"
+  },
+  "api_endpoints": {
+    "authenticated": "100/minute",
+    "public": "10/minute",
+    "upload": "5/minute"
+  },
+  "file_uploads": {
+    "max_file_size": 10485760,
+    "allowed_extensions": [
+      ".txt",
+      ".py",
+      ".js",
+      ".json",
+      ".md",
+      ".csv"
+    ],
+    "max_files_per_hour": 50
+  },
+  "chat_messages": {
+    "max_message_length": 10000,
+    "max_messages_per_minute": 30,
+    "flood_protection": true
+  }
+}

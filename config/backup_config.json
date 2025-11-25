@@ -1,0 +1,37 @@
+{
+  "enabled": true,
+  "schedule": "0 2 * * *",
+  "retention_days": 30,
+  "compression": true,
+  "encryption": true,
+  "backup_sources": [
+    {
+      "name": "database",
+      "path": "./data/",
+      "type": "postgresql_dump"
+    },
+    {
+      "name": "uploads",
+      "path": "./uploads/",
+      "type": "directory"
+    },
+    {
+      "name": "logs",
+      "path": "./logs/",
+      "type": "directory"
+    },
+    {
+      "name": "config",
+      "path": "./config/",
+      "type": "directory"
+    }
+  ],
+  "destination": {
+    "local": "./backups/",
+    "remote": {
+      "type": "s3",
+      "bucket": "eljefe-backups",
+      "region": "us-east-1"
+    }
+  }
+}
