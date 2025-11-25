@@ -1,0 +1,83 @@
+{
+  "e2e_test_config": {
+    "dashboard_url": "http://localhost:8080",
+    "default_credentials": {
+      "username": "eljefe_admin",
+      "password": "eljefe_admin"
+    },
+    "timeout_settings": {
+      "default_request_timeout": 30,
+      "long_operation_timeout": 120,
+      "concurrent_request_timeout": 60
+    },
+    "performance_thresholds": {
+      "max_response_time": 2.0,
+      "max_average_response_time": 1.0,
+      "max_auth_overhead": 0.5,
+      "min_concurrent_success_rate": 0.95
+    },
+    "test_endpoints": {
+      "get_endpoints": [
+        "/",
+        "/api/agents",
+        "/api/workflows",
+        "/api/analytics",
+        "/api/status",
+        "/health"
+      ],
+      "post_endpoints": [
+        "/api/chat",
+        "/api/workflows/assign",
+        "/api/upload"
+      ],
+      "dashboard_pages": [
+        "/dashboard-v2.html",
+        "/dashboard-advanced.html",
+        "/dashboard-charts.html",
+        "/dashboard-simple.html"
+      ]
+    },
+    "test_scenarios": {
+      "user_workflow": {
+        "name": "Complete User Workflow",
+        "description": "Tests complete user journey from login to task execution",
+        "steps": [
+          "authenticate",
+          "access_dashboard",
+          "check_agents",
+          "check_workflows",
+          "check_analytics",
+          "send_chat_message",
+          "assign_workflow"
+        ]
+      },
+      "concurrent_load": {
+        "name": "Concurrent Load Test",
+        "description": "Tests system under concurrent authenticated requests",
+        "concurrent_users": 10,
+        "requests_per_user": 5
+      },
+      "session_persistence": {
+        "name": "Session Persistence Test",
+        "description": "Tests that authentication persists across multiple requests",
+        "request_count": 10
+      },
+      "security_validation": {
+        "name": "Security Validation",
+        "description": "Tests authentication security features",
+        "tests": [
+          "invalid_credentials",
+          "expired_timestamp",
+          "missing_authorization",
+          "malformed_tokens"
+        ]
+      }
+    },
+    "reporting": {
+      "enable_detailed_logging": true,
+      "save_response_bodies": false,
+      "track_response_times": true,
+      "generate_html_report": false
+    }
+  }
+}

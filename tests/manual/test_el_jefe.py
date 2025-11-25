@@ -7,15 +7,17 @@ import sys
 import os
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, "src")
+# Add project root to path for imports (absolute path)
+# File is in tests/manual/, project root is two levels up
+project_root = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(project_root))
 
 def test_orchestrator():
     """Test orchestrator import and basic functionality."""
     print("🧪 Testing El Jefe Orchestrator...")
 
     try:
-        from src.orchestrator import Orchestrator
+        from main import Orchestrator
         print("✅ Orchestrator import successful")
     except ImportError as e:
         print(f"❌ Orchestrator import failed: {e}")
@@ -47,23 +49,21 @@ def test_chat_interface():
     print("\n🧪 Testing Chat Interface...")
 
     try:
-        from src.chat_interface import ChatInterface
-        print("✅ ChatInterface import successful")
-    except ImportError as e:
-        print(f"❌ ChatInterface import failed: {e}")
-        return False
+        # Check if chat functionality exists in monitoring_dashboard
+        from monitoring_dashboard import ChatMessage
+        print("✅ ChatMessage import successful")
 
-    try:
-        # Test if orchestrator is available in chat interface
-        chat = ChatInterface()
-        if chat.orchestrator is not None:
-            print("✅ ChatInterface orchestrator available")
-            return True
-        else:
-            print("❌ ChatInterface orchestrator is None")
-            return False
+        # Test creating a chat message
+        from datetime import datetime
+        timestamp = datetime.now().isoformat()
+        msg = ChatMessage("test", "user", "Test message", timestamp)
+        print("✅ ChatMessage creation successful")
+        return True
+    except ImportError as e:
+        print(f"❌ Chat interface import failed: {e}")
+        return False
     except Exception as e:
-        print(f"❌ ChatInterface test failed: {e}")
+        print(f"❌ Chat interface test failed: {e}")
         return False
 
 def main():

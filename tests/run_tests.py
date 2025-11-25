@@ -65,6 +65,14 @@ def run_e2e_tests():
         timeout=600
     )
 
+def run_e2e_auth_tests():
+    """Run end-to-end tests with authentication"""
+    return run_command(
+        "python3 tests/test_e2e_with_auth.py",
+        "E2E Authentication Tests",
+        timeout=300
+    )
+
 def run_performance_tests():
     """Run performance tests with Locust"""
     print("\n🚀 Starting Performance Tests with Locust...")
@@ -157,7 +165,7 @@ def generate_test_report():
 def main():
     parser = argparse.ArgumentParser(description="El Jefe Dashboard Test Runner")
     parser.add_argument("--test-type", choices=[
-        "unit", "integration", "e2e", "performance", "security", "all"
+        "unit", "integration", "e2e", "e2e-auth", "performance", "security", "all"
     ], default="all", help="Type of test to run")
     parser.add_argument("--no-start-dashboard", action="store_true",
                        help="Don't start the dashboard automatically")
@@ -194,6 +202,9 @@ def main():
 
         if args.test_type in ["e2e", "all"] and check_dashboard_running():
             results["e2e"] = run_e2e_tests()
+
+        if args.test_type in ["e2e-auth", "all"] and check_dashboard_running():
+            results["e2e-auth"] = run_e2e_auth_tests()
 
         if args.test_type in ["performance", "all"] and check_dashboard_running():
             results["performance"] = run_performance_tests()

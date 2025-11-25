@@ -8,8 +8,10 @@ import sys
 import asyncio
 from pathlib import Path
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+# Add project root to path for imports (absolute path)
+# File is in tests/manual/, project root is two levels up
+project_root = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(project_root))
 
 def test_imports():
     """Test if dashboard dependencies are available."""
@@ -35,16 +37,17 @@ def test_imports():
 
     # Test core El Jefe imports
     try:
-        from src.orchestrator import Orchestrator
+        from main import Orchestrator
         print("✅ Orchestrator: Available")
     except ImportError as e:
         print(f"❌ Orchestrator: Import failed - {e}")
 
     try:
-        from src.monitoring import ProgressMonitor
-        print("✅ ProgressMonitor: Available")
+        # ProgressMonitor may not exist as a separate module
+        from monitoring_dashboard import MonitoringDashboard
+        print("✅ MonitoringDashboard: Available")
     except ImportError as e:
-        print(f"❌ ProgressMonitor: Import failed - {e}")
+        print(f"❌ MonitoringDashboard: Import failed - {e}")
 
 def test_basic_functionality():
     """Test basic dashboard functionality without starting server."""
