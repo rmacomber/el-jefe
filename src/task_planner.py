@@ -14,6 +14,101 @@ from enum import Enum
 from .agent_manager import AgentType
 
 
+def generate_descriptive_filename(goal: str, step_type: str, extension: str = "md") -> str:
+    """
+    Generate a descriptive filename based on the goal and step type.
+
+    Args:
+        goal: The original user goal/request
+        step_type: Type of step (requirements, research, design, deliverables, review)
+        extension: File extension (default: md)
+
+    Returns:
+        Descriptive filename
+    """
+    goal_lower = goal.lower()
+
+    # Extract main topic/keywords first
+    stop_words = {"the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does", "did", "will", "would", "could", "should", "may", "might", "must", "can", "about", "from", "up", "down", "out", "off", "over", "under", "again", "further", "then", "once", "goal", "can", "you"}
+
+    words = [word for word in re.findall(r'\b\w+\b', goal_lower) if word not in stop_words and len(word) > 2]
+
+    # Identify the main deliverable type
+    if "podcast episode" in goal_lower or "podcast" in goal_lower:
+        deliverable_type = "podcast-episode"
+    elif "blog post" in goal_lower or "blog" in goal_lower:
+        deliverable_type = "blog-post"
+    elif "article" in goal_lower:
+        deliverable_type = "article"
+    elif "script" in goal_lower:
+        deliverable_type = "script"
+    elif "report" in goal_lower:
+        deliverable_type = "report"
+    elif "presentation" in goal_lower or "slides" in goal_lower:
+        deliverable_type = "presentation"
+    elif "code" in goal_lower or "software" in goal_lower or "app" in goal_lower:
+        deliverable_type = "software"
+    elif "video" in goal_lower:
+        deliverable_type = "video"
+    elif "image" in goal_lower or "visual" in goal_lower:
+        deliverable_type = "visual"
+    else:
+        deliverable_type = "project"
+
+    # Find main topic - extract meaningful keywords excluding the deliverable type
+    topic_words = []
+    for word in words:
+        if (len(word) > 3 and
+            word not in ["create", "write", "make", "develop", "design", "build", "produce", "research", "complete"] and
+            not word.isdigit() and
+            word not in deliverable_type.split("-")):
+            topic_words.append(word)
+        elif word in ["ai", "artificial", "intelligence", "machine", "learning", "data", "analysis",
+                    "climate", "environment", "energy", "renewable", "sustainable",
+                    "market", "business", "economy", "financial", "job", "employment",
+                    "health", "healthcare", "medical", "education", "learning", "trends"]:
+            topic_words.append(word)
+
+    # Use topic words if available, otherwise fallback to first few meaningful words
+    if topic_words:
+        main_topic = "-".join(topic_words[:3])  # Use up to 3 key topic words
+    elif len(words) >= 2:
+        # Filter out generic action words
+        filtered_words = [w for w in words[:4] if w not in ["create", "write", "make", "develop", "design", "build", "produce", "complete"]]
+        main_topic = "-".join(filtered_words[:2]) if filtered_words else "project"
+    else:
+        main_topic = "project"
+
+    # Step-specific suffixes
+    step_suffixes = {
+        "requirements": "requirements",
+        "research": "research",
+        "design": "design",
+        "deliverables": "final",
+        "review": "review"
+    }
+
+    suffix = step_suffixes.get(step_type, step_type)
+
+    # Create filename - prioritize descriptive topic over generic deliverable type
+    if main_topic and main_topic != "project":
+        filename = f"{deliverable_type}-{main_topic}-{suffix}.{extension}"
+    else:
+        filename = f"{deliverable_type}-{suffix}.{extension}"
+
+    # Clean up filename
+    filename = re.sub(r'-+', '-', filename)
+    filename = re.sub(r'^-|-$', '', filename)
+
+    # Limit length
+    if len(filename) > 80:
+        parts = filename.replace('.md', '').split('-')
+        if len(parts) > 4:
+            filename = '-'.join(parts[:4]) + f"-{suffix}.{extension}"
+
+    return filename
+
+
 class TaskType(Enum):
     """Types of tasks that can be planned."""
     RESEARCH = "research"
@@ -413,6 +508,13 @@ class TaskPlanner:
         Returns:
             List of workflow steps
         """
+        # Generate descriptive filenames based on the goal
+        requirements_file = generate_descriptive_filename(goal, "requirements")
+        research_file = generate_descriptive_filename(goal, "research")
+        design_file = generate_descriptive_filename(goal, "design")
+        deliverables_file = generate_descriptive_filename(goal, "deliverables")
+        review_file = generate_descriptive_filename(goal, "review")
+
         # Default to a comprehensive workflow
         return [
             WorkflowStep(
@@ -420,31 +522,31 @@ class TaskPlanner:
                 description="Analyze and understand the requirements",
                 agent_type=AgentType.ANALYST,
                 task=f"Break down the requirements for: {goal}",
-                output_file="requirements_analysis.md"
+                output_file=requirements_file
             ),
             WorkflowStep(
                 id="mixed-2",
                 description="Research relevant information",
                 agent_type=AgentType.RESEARCHER,
                 task="Research information needed to address the requirements",
-                context_files=["requirements_analysis.md"],
-                output_file="research_findings.md"
+                context_files=[requirements_file],
+                output_file=research_file
             ),
             WorkflowStep(
                 id="mixed-3",
                 description="Create solution design",
                 agent_type=AgentType.DESIGNER,
                 task="Design a solution based on requirements and research",
-                context_files=["requirements_analysis.md", "research_findings.md"],
-                output_file="solution_design.md"
+                context_files=[requirements_file, research_file],
+                output_file=design_file
             ),
             WorkflowStep(
                 id="mixed-4",
                 description="Implement or create deliverables",
                 agent_type=AgentType.CODER if "code" in goal.lower() else AgentType.MEDIA_CREATOR if "image" in goal.lower() or "video" in goal.lower() or "media" in goal.lower() or "visual" in goal.lower() else AgentType.WRITER,
                 task="Create the main deliverables for the solution",
-                context_files=["requirements_analysis.md", "research_findings.md", "solution_design.md"],
-                output_file="deliverables.md",
+                context_files=[requirements_file, research_file, design_file],
+                output_file=deliverables_file,
                 requires_approval=True
             ),
             WorkflowStep(
@@ -452,8 +554,8 @@ class TaskPlanner:
                 description="Review and validate results",
                 agent_type=AgentType.QA_TESTER,
                 task="Review all deliverables for quality and completeness",
-                context_files=["requirements_analysis.md", "research_findings.md", "solution_design.md", "deliverables.md"],
-                output_file="final_review.md"
+                context_files=[requirements_file, research_file, design_file, deliverables_file],
+                output_file=review_file
             )
         ]
 
