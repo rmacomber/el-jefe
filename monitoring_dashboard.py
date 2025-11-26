@@ -295,6 +295,12 @@ class MonitoringDashboard:
         self.app.router.add_get('/api/scheduled-workflows', self.get_scheduled_workflows)
         self.app.router.add_post('/api/upload', self.handle_file_upload_api)
 
+        # Workspace management endpoints
+        self.app.router.add_get('/api/workspaces', self.get_workspaces)
+        self.app.router.add_get('/api/workspaces/{workspace_id}', self.get_workspace_details)
+        self.app.router.add_get('/api/workspaces/{workspace_id}/files', self.get_workspace_files)
+        self.app.router.add_get('/api/workspaces/{workspace_id}/files/{filename:.+}', self.get_workspace_file)
+
         # Dashboard navigation routes
         self.app.router.add_get('/', self.serve_index)
         self.app.router.add_get('/dashboard', self.serve_index)
@@ -595,6 +601,380 @@ class MonitoringDashboard:
                 self.logger.error(f"Error getting history: {e}")
 
         return web.json_response({"history": history, "limit": limit})
+
+    # Workspace Management Endpoints
+    async def get_workspaces(self, request):
+        """Get all workspaces with optional filtering."""
+        try:
+            # Parse query parameters
+            limit = int(request.query.get("limit", 50))
+            date_filter = request.query.get("date", None)
+            status_filter = request.query.get("status", None)
+
+            workspaces = []
+            if self.orchestrator:
+                try:
+                    # Get workspaces from orchestrator
+                    all_workspaces = await self.orchestrator.list_workspaces(limit * 2)  # Get more for filtering
+
+                    # Apply filters
+                    for workspace in all_workspaces:
+                        # Skip .DS_Store and other system files
+                        if workspace.get("name", "").startswith("."):
+                            continue
+
+                        # Date filter
+                        if date_filter and date_filter not in workspace.get("path", ""):
+                            continue
+
+                        # Status filter
+                        if status_filter and workspace.get("status", "") != status_filter:
+                            continue
+
+                        workspaces.append(workspace)
+
+                except Exception as e:
+                    self.logger.error(f"Error getting workspaces from orchestrator: {e}")
+
+            # If orchestrator fails, fallback to file system scan
+            if not workspaces:
+                workspaces = await self._scan_workspaces_filesystem(limit, date_filter, status_filter)
+
+            return web.json_response({
+                "workspaces": workspaces[:limit],
+                "total": len(workspaces),
+                "filters": {
+                    "date": date_filter,
+                    "status": status_filter
+                }
+            })
+
+        except Exception as e:
+            self.logger.error(f"Error getting workspaces: {e}")
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def get_workspace_details(self, request):
+        """Get detailed information about a specific workspace."""
+        try:
+            workspace_id = request.match_info['workspace_id']
+
+            # Try to find the workspace
+            workspace = None
+            if self.orchestrator:
+                try:
+                    # Get all workspaces and find the matching one
+                    all_workspaces = await self.orchestrator.list_workspaces(1000)
+                    for ws in all_workspaces:
+                        if ws.get("name", "") == workspace_id or workspace_id in ws.get("path", ""):
+                            workspace = ws
+                            break
+                except Exception as e:
+                    self.logger.error(f"Error finding workspace: {e}")
+
+            if not workspace:
+                # Fallback to filesystem search
+                workspace = await self._find_workspace_filesystem(workspace_id)
+
+            if not workspace:
+                return web.json_response({"error": "Workspace not found"}, status=404)
+
+            # Get additional workspace details
+            workspace_path = Path(workspace["path"])
+            if workspace_path.exists():
+                # Get file list
+                files = []
+                try:
+                    for file_path in workspace_path.rglob("*"):
+                        if file_path.is_file() and not file_path.name.startswith("."):
+                            relative_path = file_path.relative_to(workspace_path)
+                            files.append({
+                                "name": file_path.name,
+                                "path": str(relative_path),
+                                "size": file_path.stat().st_size,
+                                "modified": file_path.stat().st_mtime,
+                                "type": "file" if file_path.is_file() else "directory"
+                            })
+                except Exception as e:
+                    self.logger.error(f"Error scanning workspace files: {e}")
+
+                workspace["files"] = sorted(files, key=lambda x: x["name"])
+                workspace["file_count"] = len(files)
+
+            return web.json_response(workspace)
+
+        except Exception as e:
+            self.logger.error(f"Error getting workspace details: {e}")
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def get_workspace_files(self, request):
+        """List all files in a workspace."""
+        try:
+            workspace_id = request.match_info['workspace_id']
+            workspace_path = await self._resolve_workspace_path(workspace_id)
+
+            if not workspace_path or not workspace_path.exists():
+                return web.json_response({"error": "Workspace not found"}, status=404)
+
+            files = []
+            try:
+                for file_path in workspace_path.rglob("*"):
+                    if file_path.is_file() and not file_path.name.startswith("."):
+                        relative_path = file_path.relative_to(workspace_path)
+                        stat = file_path.stat()
+
+                        files.append({
+                            "name": file_path.name,
+                            "path": str(relative_path),
+                            "size": stat.st_size,
+                            "modified": stat.st_mtime,
+                            "type": self._get_file_type(file_path),
+                            "readable": self._is_readable_file(file_path)
+                        })
+
+            except Exception as e:
+                self.logger.error(f"Error scanning workspace files: {e}")
+
+            # Sort files: directories first, then by name
+            files.sort(key=lambda x: (x["type"] != "directory", x["name"].lower()))
+
+            return web.json_response({
+                "workspace_id": workspace_id,
+                "files": files,
+                "total_files": len(files)
+            })
+
+        except Exception as e:
+            self.logger.error(f"Error getting workspace files: {e}")
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def get_workspace_file(self, request):
+        """View or download a specific file from a workspace."""
+        try:
+            workspace_id = request.match_info['workspace_id']
+            filename = request.match_info['filename']
+
+            workspace_path = await self._resolve_workspace_path(workspace_id)
+            if not workspace_path or not workspace_path.exists():
+                return web.json_response({"error": "Workspace not found"}, status=404)
+
+            file_path = workspace_path / filename
+            if not file_path.exists() or not file_path.is_file():
+                return web.json_response({"error": "File not found"}, status=404)
+
+            # Check file size limit (10MB max for viewing)
+            if file_path.stat().st_size > 10 * 1024 * 1024:
+                return web.json_response({"error": "File too large to view (max 10MB)"}, status=413)
+
+            # Check if file is readable (text-based)
+            if not self._is_readable_file(file_path):
+                return web.json_response({"error": "File type not supported for viewing"}, status=415)
+
+            # Read file content
+            try:
+                async with aiofiles.open(file_path, 'r', encoding='utf-8') as f:
+                    content = await f.read()
+            except UnicodeDecodeError:
+                # Try different encoding
+                async with aiofiles.open(file_path, 'r', encoding='latin-1') as f:
+                    content = await f.read()
+
+            # Get file info
+            stat = file_path.stat()
+
+            response_data = {
+                "workspace_id": workspace_id,
+                "filename": filename,
+                "content": content,
+                "size": stat.st_size,
+                "modified": stat.st_mtime,
+                "type": self._get_file_type(file_path),
+                "encoding": "utf-8"
+            }
+
+            # Check if download requested
+            download = request.query.get("download", "").lower() == "true"
+            if download:
+                response = web.Response(
+                    body=content.encode('utf-8'),
+                    headers={
+                        'Content-Disposition': f'attachment; filename="{filename}"',
+                        'Content-Type': 'application/octet-stream'
+                    }
+                )
+                return response
+            else:
+                return web.json_response(response_data)
+
+        except Exception as e:
+            self.logger.error(f"Error getting workspace file: {e}")
+            return web.json_response({"error": str(e)}, status=500)
+
+    # Helper methods for workspace management
+    async def _scan_workspaces_filesystem(self, limit=50, date_filter=None, status_filter=None):
+        """Scan filesystem for workspaces when orchestrator is not available."""
+        workspaces = []
+        try:
+            base_path = Path("workspaces")
+            if not base_path.exists():
+                return workspaces
+
+            # Scan for workspace directories
+            for week_dir in base_path.iterdir():
+                if not week_dir.is_dir() or week_dir.name.startswith("."):
+                    continue
+
+                for date_dir in week_dir.iterdir():
+                    if not date_dir.is_dir() or date_dir.name.startswith("."):
+                        continue
+
+                    # Apply date filter if specified
+                    if date_filter and date_filter != date_dir.name:
+                        continue
+
+                    for workspace_dir in date_dir.iterdir():
+                        if not workspace_dir.is_dir() or workspace_dir.name.startswith("."):
+                            continue
+
+                        # Try to read workspace info
+                        info_file = workspace_dir / "workspace-info.json"
+                        if info_file.exists():
+                            try:
+                                async with aiofiles.open(info_file, 'r') as f:
+                                    info_content = await f.read()
+                                    info = json.loads(info_content)
+
+                                workspace = {
+                                    "path": str(workspace_dir),
+                                    "name": info.get("name", workspace_dir.name),
+                                    "description": info.get("description", ""),
+                                    "created_at": info.get("created_at", ""),
+                                    "status": info.get("status", "unknown")
+                                }
+
+                                # Apply status filter if specified
+                                if status_filter and workspace["status"] != status_filter:
+                                    continue
+
+                                workspaces.append(workspace)
+
+                            except Exception as e:
+                                self.logger.error(f"Error reading workspace info {info_file}: {e}")
+                                continue
+                        else:
+                            # Fallback workspace info
+                            workspaces.append({
+                                "path": str(workspace_dir),
+                                "name": workspace_dir.name,
+                                "description": "",
+                                "created_at": "",
+                                "status": "unknown"
+                            })
+
+                        if len(workspaces) >= limit:
+                            break
+                    if len(workspaces) >= limit:
+                        break
+
+        except Exception as e:
+            self.logger.error(f"Error scanning workspaces filesystem: {e}")
+
+        return sorted(workspaces, key=lambda x: x.get("created_at", ""), reverse=True)
+
+    async def _find_workspace_filesystem(self, workspace_id):
+        """Find a workspace by ID in the filesystem."""
+        try:
+            base_path = Path("workspaces")
+            for week_dir in base_path.rglob("*"):
+                if week_dir.is_dir() and week_dir.name == workspace_id:
+                    info_file = week_dir / "workspace-info.json"
+                    if info_file.exists():
+                        try:
+                            async with aiofiles.open(info_file, 'r') as f:
+                                info_content = await f.read()
+                                info = json.loads(info_content)
+
+                            return {
+                                "path": str(week_dir),
+                                "name": info.get("name", week_dir.name),
+                                "description": info.get("description", ""),
+                                "created_at": info.get("created_at", ""),
+                                "status": info.get("status", "unknown")
+                            }
+                        except Exception:
+                            pass
+
+                    return {
+                        "path": str(week_dir),
+                        "name": week_dir.name,
+                        "description": "",
+                        "created_at": "",
+                        "status": "unknown"
+                    }
+        except Exception as e:
+            self.logger.error(f"Error finding workspace {workspace_id}: {e}")
+
+        return None
+
+    async def _resolve_workspace_path(self, workspace_id):
+        """Resolve workspace ID to actual filesystem path."""
+        # First try to find it by exact match
+        workspace = await self._find_workspace_filesystem(workspace_id)
+        if workspace:
+            return Path(workspace["path"])
+
+        # Try to find it by partial match
+        try:
+            base_path = Path("workspaces")
+            for path in base_path.rglob("*"):
+                if path.is_dir() and workspace_id in path.name:
+                    return path
+        except Exception as e:
+            self.logger.error(f"Error resolving workspace path: {e}")
+
+        return None
+
+    def _get_file_type(self, file_path):
+        """Determine file type based on extension."""
+        suffix = file_path.suffix.lower()
+
+        if suffix in ['.md', '.txt', '.rst']:
+            return 'text'
+        elif suffix in ['.py', '.js', '.ts', '.java', '.cpp', '.c', '.go', '.rs']:
+            return 'code'
+        elif suffix in ['.json', '.yaml', '.yml', '.xml', '.csv']:
+            return 'data'
+        elif suffix in ['.html', '.css', '.scss', '.less']:
+            return 'web'
+        elif suffix in ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp']:
+            return 'image'
+        elif suffix in ['.pdf', '.doc', '.docx', '.txt']:
+            return 'document'
+        elif suffix in ['.log']:
+            return 'log'
+        else:
+            return 'unknown'
+
+    def _is_readable_file(self, file_path):
+        """Check if file is readable as text."""
+        # Check file extension
+        text_extensions = {
+            '.md', '.txt', '.py', '.js', '.ts', '.html', '.css', '.json',
+            '.yaml', '.yml', '.xml', '.csv', '.log', '.rst', '.ini', '.cfg',
+            '.conf', '.sh', '.bash', '.zsh', '.sql', '.graphql'
+        }
+
+        if file_path.suffix.lower() in text_extensions:
+            return True
+
+        # Check file size (skip very large files)
+        try:
+            if file_path.stat().st_size > 10 * 1024 * 1024:  # 10MB
+                return False
+        except:
+            return False
+
+        # Default to False for unknown file types
+        return False
 
     async def serve_index(self, request):
         """Serve the main dashboard HTML page."""
