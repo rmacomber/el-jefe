@@ -573,10 +573,109 @@
                 width: calc(100% - 40px);
                 right: 20px;
                 left: 20px;
+                height: 70vh; /* Better mobile height */
+                bottom: 20px;
+            }
+
+            .chat-header {
+                padding: 15px;
+                font-size: 16px; /* Larger tap target */
+                cursor: pointer;
+                user-select: none;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .chat-input-container {
+                padding: 15px;
+                display: flex;
+                gap: 10px;
+            }
+
+            .chat-input {
+                flex: 1;
+                padding: 12px 15px;
+                font-size: 16px; /* Prevent zoom on iOS */
+                border-radius: 25px;
+                border: 1px solid var(--border-color);
+                background: var(--glass-bg);
+                color: var(--text-primary);
+                outline: none;
+            }
+
+            .chat-input:focus {
+                border-color: var(--active);
+                box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+            }
+
+            .send-btn {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--primary-gradient);
+                border: none;
+                cursor: pointer;
+                font-size: 18px;
+                flex-shrink: 0;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .send-btn:hover {
+                transform: scale(1.05);
+            }
+
+            .send-btn:active {
+                transform: scale(0.95);
             }
 
             .overview-metrics {
                 grid-template-columns: repeat(2, 1fr);
+            }
+
+            /* Improve chat messages on mobile */
+            .activity-item {
+                padding: 12px;
+                margin-bottom: 8px;
+            }
+
+            .activity-text {
+                font-size: 14px;
+                line-height: 1.4;
+            }
+
+            .activity-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+
+            /* Typing indicator animation for mobile */
+            .typing-dots {
+                display: flex;
+                gap: 4px;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+            }
+
+            .typing-dots span {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--text-primary);
+                opacity: 0.4;
+                animation: typing 1.4s infinite ease-in-out;
+            }
+
+            .typing-dots span:nth-child(1) { animation-delay: 0s; }
+            .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+            .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+            @keyframes typing {
+                0%, 60%, 100% { opacity: 0.4; transform: scale(1); }
+                30% { opacity: 1; transform: scale(1.2); }
             }
         }
 
@@ -1498,6 +1597,11 @@
             renderAgents();
             renderActivity();
             startRealTimeUpdates();
+
+            // Initialize WebSocket connection for chat functionality
+            setTimeout(() => {
+                connectWebSocket();
+            }, 1000);
         }
 
         // Render agent cards
@@ -1613,20 +1717,29 @@
             const message = input.value.trim();
 
             if (message) {
-                addChatMessage(message, 'user');
-                input.value = '';
+                try {
+                    addChatMessage(message, 'user');
+                    input.value = '';
 
-                // Simulate response
-                setTimeout(() => {
-                    const responses = [
-                        "I'm analyzing your request and coordinating the appropriate agents.",
-                        "Task assigned! I'll update you on the progress.",
-                        "Great question! Let me pull the latest metrics for you.",
-                        "I've initiated the workflow. You can monitor the progress in real-time."
-                    ];
-                    const response = responses[Math.floor(Math.random() * responses.length)];
-                    addChatMessage(response, 'assistant');
-                }, 1000 + Math.random() * 2000);
+                    // Send message to backend via WebSocket - NO FALLBACKS
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: 'chat_message',
+                            message: message,
+                            sender: 'user'
+                        }));
+                        showTypingIndicator();
+                    } else {
+                        throw new Error('Chat not available: WebSocket connection required. Please refresh the page.');
+                    }
+                } catch (error) {
+                    console.error('Chat error:', error);
+                    addChatMessage(`❌ Error: ${error.message}`, 'system');
+
+                    // Re-enable the input
+                    input.value = message;
+                    input.focus();
+                }
             }
         }
 
@@ -1650,6 +1763,39 @@
         function handleChatKeyPress(event) {
             if (event.key === 'Enter') {
                 sendChatMessage();
+            }
+        }
+
+        function showTypingIndicator() {
+            const messagesContainer = document.getElementById('chat-messages');
+            const existingIndicator = document.getElementById('typing-indicator');
+
+            if (!existingIndicator) {
+                const indicator = document.createElement('div');
+                indicator.id = 'typing-indicator';
+                indicator.className = 'activity-item typing';
+                indicator.innerHTML = `
+                    <div class="activity-icon" style="background: var(--primary-gradient);">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">El Jefe is typing...</div>
+                        <div class="activity-time">Just now</div>
+                    </div>
+                `;
+                messagesContainer.appendChild(indicator);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) {
+                indicator.remove();
             }
         }
 
@@ -1807,6 +1953,10 @@
                         text: `${data.agent_id} activated successfully`,
                         timestamp: new Date().toLocaleString()
                     });
+                    break;
+                case 'chat_message':
+                    hideTypingIndicator();
+                    addChatMessage(data.message.content, data.message.sender);
                     break;
             }
         }
