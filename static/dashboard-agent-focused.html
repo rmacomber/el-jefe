@@ -1,0 +1,2331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Jefe - Agent Command Center</title>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #00d4ff 0%, #090979 50%, #020024 100%);
+            --secondary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --accent-gradient: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            --dark-bg: #0a0a0f;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --error: #ff4757;
+            --active: #00d4ff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(240, 147, 251, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Header */
+        .header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 20px 30px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .logo h1 {
+            font-size: 1.8em;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: var(--accent-gradient);
+            color: white;
+            border-color: transparent;
+            transform: translateY(-2px);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        /* Agent Status Grid */
+        .agent-status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        /* Agent Cards */
+        .agent-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .agent-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--primary-gradient);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .agent-card.active::before {
+            transform: scaleX(1);
+            background: linear-gradient(90deg, var(--success), var(--active));
+        }
+
+        .agent-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--active);
+            box-shadow: 0 10px 40px rgba(0, 212, 255, 0.1);
+        }
+
+        .agent-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .agent-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .agent-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            background: var(--primary-gradient);
+            position: relative;
+        }
+
+        .agent-avatar.active::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 15px;
+            height: 15px;
+            background: var(--success);
+            border-radius: 50%;
+            border: 2px solid var(--dark-bg);
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .agent-details h3 {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+
+        .agent-type {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+
+        .agent-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-active {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--success);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .status-idle {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--warning);
+            border: 1px solid rgba(255, 170, 0, 0.3);
+        }
+
+        .status-offline {
+            background: rgba(255, 71, 87, 0.2);
+            color: var(--error);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+
+        .agent-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--active);
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .agent-progress {
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-gradient);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .current-task {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 10px;
+            border-left: 3px solid var(--active);
+        }
+
+        .current-task p {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .task-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* System Overview */
+        .system-overview {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .overview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .overview-title {
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        .overview-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .overview-metric {
+            text-align: center;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+        }
+
+        .overview-metric .metric-value {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        /* Chat Integration */
+        .chat-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 400px;
+            height: 500px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .chat-panel.minimized {
+            height: 60px;
+        }
+
+        .chat-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .chat-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        .chat-status {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: blink 2s infinite;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .chat-panel:not(.minimized) .chat-messages {
+            display: block;
+        }
+
+        .chat-input-container {
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+            display: none;
+        }
+
+        .chat-panel:not(.minimized) .chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px 15px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: var(--active);
+        }
+
+        .send-btn {
+            padding: 10px 15px;
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Activity Feed */
+        .activity-feed {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 25px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .activity-title {
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: start;
+            gap: 15px;
+            padding: 15px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border-left: 3px solid;
+            transition: all 0.3s ease;
+        }
+
+        .activity-item:hover {
+            transform: translateX(5px);
+        }
+
+        .activity-item.success {
+            border-left-color: var(--success);
+        }
+
+        .activity-item.warning {
+            border-left-color: var(--warning);
+        }
+
+        .activity-item.error {
+            border-left-color: var(--error);
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-text {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .activity-time {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .agent-status-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-buttons {
+                display: none;
+            }
+
+            .chat-panel {
+                width: calc(100% - 40px);
+                right: 20px;
+                left: 20px;
+            }
+
+            .overview-metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--active);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Glow Effects */
+        .glow {
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .glow-success {
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .glow-error {
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.3);
+        }
+
+        /* Premium Agent Styles */
+        .agent-card.premium {
+            border: 2px solid var(--warning);
+            background: linear-gradient(135deg, rgba(255, 170, 0, 0.1), var(--glass-bg));
+        }
+
+        .agent-card.premium::before {
+            background: linear-gradient(90deg, var(--warning), var(--success));
+        }
+
+        .premium-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--accent-gradient);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            z-index: 10;
+            box-shadow: 0 2px 10px rgba(240, 147, 251, 0.3);
+        }
+
+        .model-info {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        .specialization-tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            padding: 10px 15px;
+            margin: 15px 0;
+            font-size: 0.85em;
+            color: var(--active);
+        }
+
+        .spec-icon {
+            font-size: 1.1em;
+        }
+
+        .agent-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .agent-action-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .agent-action-btn:hover {
+            background: var(--card-bg);
+            color: var(--text-primary);
+            transform: translateY(-1px);
+        }
+
+        .agent-action-btn.primary {
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+        }
+
+        .agent-action-btn.primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 20px rgba(240, 147, 251, 0.3);
+        }
+
+        /* Enhanced Agent Status Indicators */
+        .agent-card.active .agent-avatar::after {
+            animation: pulse-success 2s infinite;
+        }
+
+        @keyframes pulse-success {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+        }
+
+        /* Agent Type Indicators */
+        .agent-card[data-agent-type="claude_code"] {
+            background: linear-gradient(135deg, rgba(155, 89, 182, 0.1), var(--glass-bg));
+        }
+
+        .agent-card[data-agent-type="claude_code"] .agent-avatar {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">🤖</div>
+                <h1>El Jefe</h1>
+            </div>
+            <nav class="nav-buttons">
+                <a href="#" class="nav-btn active" onclick="showView('agents')">
+                    <span>🎯</span>
+                    <span>Agents</span>
+                </a>
+                <a href="schedule-workflows.html" class="nav-btn">
+                    <span>📅</span>
+                    <span>Schedule</span>
+                </a>
+                <a href="#" class="nav-btn" onclick="showView('workspaces')">
+                    <span>📁</span>
+                    <span>Workspaces</span>
+                </a>
+                <a href="#" class="nav-btn">
+                    <span>📊</span>
+                    <span>Analytics</span>
+                </a>
+                <a href="#" class="nav-btn">
+                    <span>⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- System Overview -->
+        <section class="system-overview">
+            <div class="overview-header">
+                <h2 class="overview-title" id="view-title">🚀 Mission Control</h2>
+                <div class="loading"></div>
+            </div>
+            <div class="overview-metrics">
+                <div class="overview-metric">
+                    <div class="metric-value" id="active-agents">4</div>
+                    <div class="metric-label">Active Agents</div>
+                </div>
+                <div class="overview-metric">
+                    <div class="metric-value" id="jobs-completed">127</div>
+                    <div class="metric-label">Jobs Completed</div>
+                </div>
+                <div class="overview-metric">
+                    <div class="metric-value" id="success-rate">98%</div>
+                    <div class="metric-label">Success Rate</div>
+                </div>
+                <div class="overview-metric">
+                    <div class="metric-value" id="avg-response">1.2s</div>
+                    <div class="metric-label">Avg Response</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Agents View -->
+        <div id="agents-view">
+            <!-- Agent Status Grid -->
+            <section class="agent-status-grid" id="agents-grid">
+                <!-- Agents will be dynamically loaded here -->
+            </section>
+        </div>
+
+        <!-- Workspaces View -->
+        <div id="workspaces-view" style="display: none;">
+            <!-- Workspace Manager -->
+            <section class="workspace-manager">
+                <!-- Workspace Browser -->
+                <div class="workspace-browser">
+                    <div class="workspace-header">
+                        <h3>📁 Workspaces</h3>
+                        <div class="workspace-controls">
+                            <input type="text" id="workspace-search" placeholder="Search workspaces..." class="search-input">
+                            <select id="status-filter" class="filter-select">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="completed">Completed</option>
+                                <option value="paused">Paused</option>
+                            </select>
+                            <button class="btn-primary" onclick="createNewWorkspace()">➕ New</button>
+                        </div>
+                    </div>
+                    <div class="workspace-list" id="workspace-list">
+                        <!-- Workspaces will be dynamically loaded here -->
+                    </div>
+                </div>
+
+                <!-- File Explorer -->
+                <div class="file-explorer">
+                    <div class="file-explorer-header">
+                        <h3 id="current-workspace-name">Select a workspace</h3>
+                        <div class="file-actions">
+                            <button class="btn-secondary" onclick="refreshFiles()">🔄 Refresh</button>
+                            <button class="btn-primary" onclick="uploadFile()">📤 Upload</button>
+                        </div>
+                    </div>
+                    <div class="file-browser" id="file-browser">
+                        <div class="empty-state">
+                            <div class="empty-icon">📁</div>
+                            <p>Select a workspace to browse files</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Preview -->
+                <div class="file-preview">
+                    <div class="preview-header">
+                        <h3>File Preview</h3>
+                        <button class="close-preview" onclick="closePreview()">✕</button>
+                    </div>
+                    <div class="preview-content" id="file-preview-content">
+                        <div class="empty-state">
+                            <div class="empty-icon">👁️</div>
+                            <p>Select a file to preview</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Activity Feed -->
+        <section class="activity-feed">
+            <div class="activity-header">
+                <h3 class="activity-title">⚡ Live Activity Feed</h3>
+                <button class="nav-btn" onclick="refreshActivity()">🔄</button>
+            </div>
+            <div class="activity-list" id="activity-list">
+                <!-- Activity items will be dynamically loaded here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Chat Panel -->
+    <div class="chat-panel" id="chat-panel">
+        <div class="chat-header" onclick="toggleChat()">
+            <div class="chat-title">
+                <div class="chat-status"></div>
+                <span>💬 El Jefe Assistant</span>
+            </div>
+            <span id="chat-toggle">−</span>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="activity-item success">
+                <div class="activity-icon" style="background: var(--primary-gradient);">🤖</div>
+                <div class="activity-content">
+                    <div class="activity-text">El Jefe is online and ready to assist</div>
+                    <div class="activity-time">Just now</div>
+                </div>
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <input
+                type="text"
+                class="chat-input"
+                id="chat-input"
+                placeholder="Ask El Jefe anything..."
+                onkeypress="handleChatKeyPress(event)"
+            >
+            <button class="send-btn" onclick="sendChatMessage()">
+                <span>📤</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Workspace Manager Styles -->
+    <style>
+        /* Workspace Manager Layout */
+        .workspace-manager {
+            display: grid;
+            grid-template-columns: 350px 1fr 400px;
+            gap: 20px;
+            height: 600px;
+            margin-bottom: 20px;
+        }
+
+        /* Workspace Browser */
+        .workspace-browser {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .workspace-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .workspace-header h3 {
+            font-size: 1.3em;
+            font-weight: 600;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .workspace-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-input {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-size: 0.9em;
+            width: 150px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--active);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+        }
+
+        .filter-select {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            font-size: 0.9em;
+        }
+
+        .workspace-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .workspace-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .workspace-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--active);
+            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.1);
+        }
+
+        .workspace-card.active {
+            border-color: var(--success);
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), var(--card-bg));
+        }
+
+        .workspace-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .workspace-name {
+            font-weight: 600;
+            font-size: 1.1em;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .workspace-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--success);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .status-completed {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--active);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .status-paused {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--warning);
+            border: 1px solid rgba(255, 170, 0, 0.3);
+        }
+
+        .workspace-description {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .workspace-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.8em;
+            color: var(--text-secondary);
+        }
+
+        .workspace-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* File Explorer */
+        .file-explorer {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .file-explorer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .file-explorer-header h3 {
+            font-size: 1.3em;
+            font-weight: 600;
+            background: var(--secondary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .file-browser {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .file-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .file-item:hover {
+            background: var(--glass-bg);
+            transform: translateX(5px);
+            border-color: var(--active);
+        }
+
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: var(--primary-gradient);
+        }
+
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            font-weight: 500;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-meta {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 10px;
+        }
+
+        .file-size {
+            color: var(--text-secondary);
+        }
+
+        /* File Preview */
+        .file-preview {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .preview-header h3 {
+            font-size: 1.3em;
+            font-weight: 600;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .close-preview {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.2em;
+        }
+
+        .close-preview:hover {
+            background: var(--error);
+            border-color: var(--error);
+            transform: scale(1.1);
+        }
+
+        .preview-content {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        /* Buttons */
+        .btn-primary, .btn-secondary {
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 10px;
+            padding: 8px 16px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .btn-secondary {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--active);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            margin: 0;
+            font-size: 0.9em;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .workspace-manager {
+                grid-template-columns: 300px 1fr;
+                height: 500px;
+            }
+
+            .file-preview {
+                grid-column: 1 / -1;
+                height: 200px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .workspace-manager {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .workspace-browser,
+            .file-explorer,
+            .file-preview {
+                height: 300px;
+            }
+
+            .workspace-controls {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .search-input {
+                width: 100%;
+            }
+        }
+
+        /* Scrollbar Styling */
+        .workspace-list::-webkit-scrollbar,
+        .file-browser::-webkit-scrollbar,
+        .preview-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .workspace-list::-webkit-scrollbar-track,
+        .file-browser::-webkit-scrollbar-track,
+        .preview-content::-webkit-scrollbar-track {
+            background: var(--card-bg);
+            border-radius: 3px;
+        }
+
+        .workspace-list::-webkit-scrollbar-thumb,
+        .file-browser::-webkit-scrollbar-thumb,
+        .preview-content::-webkit-scrollbar-thumb {
+            background: var(--active);
+            border-radius: 3px;
+        }
+
+        .workspace-list::-webkit-scrollbar-thumb:hover,
+        .file-browser::-webkit-scrollbar-thumb:hover,
+        .preview-content::-webkit-scrollbar-thumb:hover {
+            background: var(--success);
+        }
+    </style>
+
+    <script>
+        // Real Claude Code + El Jefe agents data - will be loaded from backend
+        let agentsData = [];
+
+        // Load real agent data on initialization
+            {
+                id: 'prompt-engineer',
+                name: 'Prompt Engineer',
+                type: 'Prompt Optimization',
+                status: 'active',
+                avatar: '📝',
+                model: 'Opus',
+                tasksCompleted: 98,
+                successRate: 99.2,
+                avgResponseTime: '1.8s',
+                currentProgress: 80,
+                currentTask: 'Optimizing system prompts for code generation workflows',
+                premium: true,
+                specialization: 'Prompt Design & Optimization'
+            },
+            {
+                id: 'python-pro',
+                name: 'Python Pro',
+                type: 'Python Development',
+                status: 'active',
+                avatar: '🐍',
+                model: 'Sonnet',
+                tasksCompleted: 176,
+                successRate: 97.8,
+                avgResponseTime: '1.4s',
+                currentProgress: 45,
+                currentTask: 'Implementing async data processing pipeline with performance optimization',
+                premium: true,
+                specialization: 'Advanced Python & Performance'
+            },
+            {
+                id: 'frontend-developer',
+                name: 'Frontend Developer',
+                type: 'React Development',
+                status: 'active',
+                avatar: '⚛️',
+                model: 'Sonnet',
+                tasksCompleted: 124,
+                successRate: 96.9,
+                avgResponseTime: '1.6s',
+                currentProgress: 70,
+                currentTask: 'Building responsive dashboard components with TypeScript',
+                premium: true,
+                specialization: 'React & Modern Frontend'
+            },
+            {
+                id: 'ui-ux-designer',
+                name: 'UI/UX Designer',
+                type: 'Design Systems',
+                status: 'idle',
+                avatar: '🎨',
+                model: 'Sonnet',
+                tasksCompleted: 87,
+                successRate: 98.1,
+                avgResponseTime: '2.1s',
+                currentProgress: 0,
+                currentTask: 'Available for next design assignment',
+                premium: true,
+                specialization: 'User Interface & Experience Design'
+            },
+            // El Jefe Native Agents
+            {
+                id: 'eljefe_security-analyst',
+                name: 'Security Guardian',
+                type: 'Security Analysis',
+                status: 'active',
+                avatar: '🛡️',
+                model: 'Sonnet',
+                tasksCompleted: 45,
+                successRate: 99,
+                avgResponseTime: '2.1s',
+                currentProgress: 75,
+                currentTask: 'Vulnerability assessment on API endpoints',
+                premium: false,
+                specialization: 'Security & Vulnerability Assessment'
+            },
+            {
+                id: 'eljefe_coder',
+                name: 'Code Master',
+                type: 'Software Development',
+                status: 'active',
+                avatar: '💻',
+                model: 'Sonnet',
+                tasksCompleted: 89,
+                successRate: 97,
+                avgResponseTime: '1.5s',
+                currentProgress: 40,
+                currentTask: 'Implementing user authentication module',
+                premium: false,
+                specialization: 'General Software Development'
+            },
+            {
+                id: 'eljefe_qa_tester',
+                name: 'Bug Hunter',
+                type: 'Testing & QA',
+                status: 'idle',
+                avatar: '🔍',
+                model: 'Sonnet',
+                tasksCompleted: 67,
+                successRate: 95,
+                avgResponseTime: '1.8s',
+                currentProgress: 0,
+                currentTask: 'Waiting for next assignment',
+                premium: false,
+                specialization: 'Quality Assurance & Testing'
+            },
+            {
+                id: 'eljefe_writer',
+                name: 'Doc Smith',
+                type: 'Documentation',
+                status: 'active',
+                avatar: '📄',
+                model: 'Sonnet',
+                tasksCompleted: 34,
+                successRate: 98,
+                avgResponseTime: '2.3s',
+                currentProgress: 90,
+                currentTask: 'Creating API documentation for v2.0',
+                premium: false,
+                specialization: 'Technical Writing & Documentation'
+            },
+            {
+                id: 'eljefe_researcher',
+                name: 'Data Miner',
+                type: 'Research & Analysis',
+                status: 'offline',
+                avatar: '🔬',
+                model: 'Sonnet',
+                tasksCompleted: 28,
+                successRate: 96,
+                avgResponseTime: '3.1s',
+                currentProgress: 0,
+                currentTask: 'Offline - Scheduled maintenance',
+                premium: false,
+                specialization: 'Research & Information Gathering'
+            }
+        ];
+
+        // Sample activity data
+        const activityData = [
+            {
+                type: 'success',
+                icon: '✅',
+                text: 'Security Guardian completed vulnerability assessment',
+                time: '2 minutes ago'
+            },
+            {
+                type: 'warning',
+                icon: '⚠️',
+                text: 'Code Master encountered merge conflicts in feature branch',
+                time: '5 minutes ago'
+            },
+            {
+                type: 'success',
+                icon: '🚀',
+                text: 'New workflow initiated: Client Onboarding Process',
+                time: '8 minutes ago'
+            },
+            {
+                type: 'success',
+                icon: '📝',
+                text: 'Doc Smith published API documentation v2.0',
+                time: '12 minutes ago'
+            },
+            {
+                type: 'error',
+                icon: '❌',
+                text: 'Data Miner failed to connect to research database',
+                time: '15 minutes ago'
+            }
+        ];
+
+        // Initialize dashboard
+        function initializeDashboard() {
+            renderAgents();
+            renderActivity();
+            startRealTimeUpdates();
+        }
+
+        // Render agent cards
+        function renderAgents() {
+            const agentsGrid = document.getElementById('agents-grid');
+            agentsGrid.innerHTML = '';
+
+            agentsData.forEach(agent => {
+                const agentCard = createAgentCard(agent);
+                agentsGrid.appendChild(agentCard);
+            });
+        }
+
+        // Create agent card element
+        function createAgentCard(agent) {
+            const card = document.createElement('div');
+            card.className = `agent-card ${agent.status} ${agent.premium ? 'premium' : ''}`;
+
+            const premiumBadge = agent.premium ? '<div class="premium-badge">⭐ Premium</div>' : '';
+            const modelInfo = `<div class="model-info">Model: ${agent.model}</div>`;
+
+            card.innerHTML = `
+                ${premiumBadge}
+                <div class="agent-header">
+                    <div class="agent-info">
+                        <div class="agent-avatar ${agent.status}">${agent.avatar}</div>
+                        <div class="agent-details">
+                            <h3>${agent.name}</h3>
+                            <div class="agent-type">${agent.type}</div>
+                            ${modelInfo}
+                        </div>
+                    </div>
+                    <div class="agent-status status-${agent.status}">${agent.status}</div>
+                </div>
+                <div class="agent-metrics">
+                    <div class="metric">
+                        <div class="metric-value">${agent.tasksCompleted}</div>
+                        <div class="metric-label">Completed</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${agent.successRate}%</div>
+                        <div class="metric-label">Success</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${agent.avgResponseTime}</div>
+                        <div class="metric-label">Response</div>
+                    </div>
+                </div>
+                <div class="specialization-tag">
+                    <span class="spec-icon">🎯</span>
+                    <span>${agent.specialization}</span>
+                </div>
+                ${agent.currentProgress > 0 ? `
+                    <div class="agent-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${agent.currentProgress}%"></div>
+                        </div>
+                    </div>
+                ` : ''}
+                <div class="current-task">
+                    <p>Current Task:</p>
+                    <div class="task-name">${agent.currentTask}</div>
+                </div>
+                <div class="agent-actions">
+                    <button class="agent-action-btn" onclick="assignTask('${agent.id}')">Assign Task</button>
+                    ${agent.status === 'idle' ?
+                        `<button class="agent-action-btn primary" onclick="activateAgent('${agent.id}')">Activate</button>` :
+                        `<button class="agent-action-btn" onclick="viewDetails('${agent.id}')">Details</button>`
+                    }
+                </div>
+            `;
+            return card;
+        }
+
+        // Render activity feed
+        function renderActivity() {
+            const activityList = document.getElementById('activity-list');
+            activityList.innerHTML = '';
+
+            activityData.forEach(activity => {
+                const activityItem = createActivityItem(activity);
+                activityList.appendChild(activityItem);
+            });
+        }
+
+        // Create activity item element
+        function createActivityItem(activity) {
+            const item = document.createElement('div');
+            item.className = `activity-item ${activity.type}`;
+            item.innerHTML = `
+                <div class="activity-icon" style="background: var(--${type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'error'}}-gradient);">
+                    ${activity.icon}
+                </div>
+                <div class="activity-content">
+                    <div class="activity-text">${activity.text}</div>
+                    <div class="activity-time">${activity.time}</div>
+                </div>
+            `;
+            return item;
+        }
+
+        // Chat functionality
+        function toggleChat() {
+            const chatPanel = document.getElementById('chat-panel');
+            const toggle = document.getElementById('chat-toggle');
+
+            chatPanel.classList.toggle('minimized');
+            toggle.textContent = chatPanel.classList.contains('minimized') ? '+' : '−';
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+
+            if (message) {
+                addChatMessage(message, 'user');
+                input.value = '';
+
+                // Simulate response
+                setTimeout(() => {
+                    const responses = [
+                        "I'm analyzing your request and coordinating the appropriate agents.",
+                        "Task assigned! I'll update you on the progress.",
+                        "Great question! Let me pull the latest metrics for you.",
+                        "I've initiated the workflow. You can monitor the progress in real-time."
+                    ];
+                    const response = responses[Math.floor(Math.random() * responses.length)];
+                    addChatMessage(response, 'assistant');
+                }, 1000 + Math.random() * 2000);
+            }
+        }
+
+        function addChatMessage(message, sender) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const messageElement = document.createElement('div');
+            messageElement.className = `activity-item ${sender === 'user' ? 'success' : ''}`;
+            messageElement.innerHTML = `
+                <div class="activity-icon" style="background: ${sender === 'user' ? 'var(--success)' : 'var(--primary-gradient)'};">
+                    ${sender === 'user' ? '👤' : '🤖'}
+                </div>
+                <div class="activity-content">
+                    <div class="activity-text">${message}</div>
+                    <div class="activity-time">Just now</div>
+                </div>
+            `;
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
+        }
+
+        // Real-time updates from backend
+        function startRealTimeUpdates() {
+            // Refresh agent data every 5 seconds
+            setInterval(loadRealAgentData, 5000);
+
+            // Refresh activity feed every 10 seconds
+            setInterval(loadRealActivity, 10000);
+
+            // Simulate progress updates for active agents
+            setInterval(() => {
+                agentsData.forEach(agent => {
+                    if (agent.status === 'active' && agent.currentProgress < 100 && agent.currentProgress > 0) {
+                        // Simulate slow progress updates
+                        const progressIncrement = Math.random() * 2; // 0-2% increment
+                        agent.currentProgress = Math.min(100, agent.currentProgress + progressIncrement);
+
+                        if (agent.currentProgress >= 100) {
+                            agent.currentProgress = 100;
+                            agent.currentTask = 'Task completed successfully!';
+                            agent.status = 'idle';
+                            setTimeout(() => {
+                                agent.currentProgress = 0;
+                                agent.currentTask = 'Available for next assignment';
+                                agent.status = 'idle';
+                                renderAgents();
+                            }, 2000);
+                        }
+                    }
+                });
+                renderAgents();
+            }, 8000);
+        }
+
+        // Refresh activity feed
+        function refreshActivity() {
+            // Simulate refresh
+            const activityList = document.getElementById('activity-list');
+            activityList.style.opacity = '0.5';
+            setTimeout(() => {
+                renderActivity();
+                activityList.style.opacity = '1';
+            }, 500);
+        }
+
+        // Agent action functions
+        function assignTask(agentId) {
+            const agent = agentsData.find(a => a.id === agentId);
+            if (agent) {
+                const task = prompt(`Assign task to ${agent.name}:`, "Enter task description...");
+                if (task && task.trim()) {
+                    addChatMessage(`Task assigned to ${agent.name}: "${task}"`, 'user');
+
+                    // Simulate agent response
+                    setTimeout(() => {
+                        addChatMessage(`✅ Task accepted by ${agent.name}. I'll start working on "${task}" right away.`, 'assistant');
+
+                        // Update agent status
+                        agent.status = 'active';
+                        agent.currentProgress = 10;
+                        agent.currentTask = task;
+                        renderAgents();
+                    }, 1000);
+                }
+            }
+        }
+
+        function activateAgent(agentId) {
+            const agent = agentsData.find(a => a.id === agentId);
+            if (agent && agent.status === 'idle') {
+                addChatMessage(`🔄 Activating ${agent.name}...`, 'user');
+
+                setTimeout(() => {
+                    agent.status = 'active';
+                    agent.currentTask = 'Activated and ready for assignments';
+                    renderAgents();
+                    addChatMessage(`✅ ${agent.name} is now active and ready for tasks!`, 'assistant');
+                }, 1500);
+            }
+        }
+
+        function viewDetails(agentId) {
+            const agent = agentsData.find(a => a.id === agentId);
+            if (agent) {
+                const premiumStatus = agent.premium ? 'Premium Claude Code Agent' : 'El Jefe Native Agent';
+                const details = `
+                    📋 **Agent Details**
+
+                    **Name**: ${agent.name}
+                    **Type**: ${premiumStatus}
+                    **Specialization**: ${agent.specialization}
+                    **Model**: ${agent.model}
+                    **Status**: ${agent.status}
+
+                    **Performance Metrics**:
+                    • Tasks Completed: ${agent.tasksCompleted}
+                    • Success Rate: ${agent.successRate}%
+                    • Average Response: ${agent.avgResponseTime}
+
+                    **Current Task**: ${agent.currentTask}
+                `;
+
+                addChatMessage(details, 'assistant');
+            }
+        }
+
+        // WebSocket connection for real-time updates
+        let ws = null;
+
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket(`ws://${window.location.hostname}:8080/ws`);
+
+                ws.onopen = function() {
+                    console.log('🔌 WebSocket connected to El Jefe backend');
+                    addChatMessage('🤖 Connected to El Jefe agent system', 'assistant');
+                };
+
+                ws.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                };
+
+                ws.onclose = function() {
+                    console.log('🔌 WebSocket disconnected');
+                    setTimeout(connectWebSocket, 3000); // Reconnect after 3 seconds
+                };
+
+                ws.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                };
+            } catch (error) {
+                console.error('Failed to connect WebSocket:', error);
+            }
+        }
+
+        function handleWebSocketMessage(data) {
+            switch(data.type) {
+                case 'agent_task_assigned':
+                    updateAgentStatus(data.agent_id, 'active');
+                    addActivityItem({
+                        type: 'success',
+                        icon: '🚀',
+                        text: `Task assigned to ${data.agent_id}: "${data.task.substring(0, 50)}..."`,
+                        timestamp: new Date().toLocaleString()
+                    });
+                    break;
+                case 'agent_activated':
+                    updateAgentStatus(data.agent_id, 'active');
+                    addActivityItem({
+                        type: 'success',
+                        icon: '✅',
+                        text: `${data.agent_id} activated successfully`,
+                        timestamp: new Date().toLocaleString()
+                    });
+                    break;
+            }
+        }
+
+        // Load real agent data from API
+        async function loadRealAgentData() {
+            try {
+                const response = await fetch('/api/agents/real');
+                const data = await response.json();
+
+                if (data.success) {
+                    updateAgentData(data.agents);
+                    updateSystemMetrics(data);
+                    addChatMessage(`🤖 Loaded ${data.total_agents} agents (${data.active_agents} active)`, 'assistant');
+                } else {
+                    console.error('Failed to load agent data:', data.error);
+                }
+            } catch (error) {
+                console.error('Error loading agent data:', error);
+                // Fallback to sample data if API is not available
+                addChatMessage('⚠️ Using demo data - real backend not connected', 'assistant');
+            }
+        }
+
+        // Update agent data in the UI
+        function updateAgentData(realAgents) {
+            // Update agents array with real data
+            agentsData = realAgents;
+
+            // Re-render the agent cards
+            renderAgents();
+
+            // Update system overview metrics
+            const activeCount = realAgents.filter(a => a.status === 'active').length;
+            const totalCompleted = realAgents.reduce((sum, a) => sum + a.tasksCompleted, 0);
+            const avgSuccessRate = realAgents.reduce((sum, a) => sum + a.successRate, 0) / realAgents.length;
+
+            document.getElementById('active-agents').textContent = activeCount;
+            document.getElementById('jobs-completed').textContent = totalCompleted;
+            document.getElementById('success-rate').textContent = `${Math.round(avgSuccessRate)}%`;
+        }
+
+        function updateSystemMetrics(data) {
+            // Update any additional system metrics from real data
+            const activeCount = data.active_agents || 0;
+            const totalAgents = data.total_agents || 0;
+
+            // Update status indicators
+            updateAgentCounts();
+        }
+
+        // Update agent status in the UI
+        function updateAgentStatus(agentId, status) {
+            const agent = agentsData.find(a => a.id === agentId);
+            if (agent) {
+                agent.status = status;
+                if (status === 'active') {
+                    agent.currentProgress = 10;
+                }
+                renderAgents();
+            }
+        }
+
+        // Add activity item to the feed
+        function addActivityItem(activity) {
+            const activityList = document.getElementById('activity-list');
+            const activityElement = createActivityElement(activity);
+            activityList.insertBefore(activityElement, activityList.firstChild);
+
+            // Keep only the latest 20 items
+            while (activityList.children.length > 20) {
+                activityList.removeChild(activityList.lastChild);
+            }
+        }
+
+        // Assign task to agent (connected to real backend)
+        async function assignTask(agentId) {
+            const agent = agentsData.find(a => a.id === agentId);
+            if (!agent) return;
+
+            const task = prompt(`Assign task to ${agent.name}:`, "Enter task description...");
+            if (task && task.trim()) {
+                try {
+                    const response = await fetch(`/api/agents/${agentId}/assign`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ task: task.trim() })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        addChatMessage(`✅ Task assigned to ${agent.name}: "${task}"`, 'user');
+
+                        // Add chat response from El Jefe
+                        setTimeout(() => {
+                            addChatMessage(`🎯 Task accepted by ${agent.name}! Job ID: ${result.job_id}. I'll start working on "${task}" right away.`, 'assistant');
+                        }, 1000);
+                    } else {
+                        addChatMessage(`❌ Failed to assign task: ${result.error}`, 'assistant');
+                    }
+                } catch (error) {
+                    console.error('Error assigning task:', error);
+                    addChatMessage(`❌ Network error while assigning task`, 'assistant');
+                }
+            }
+        }
+
+        // Activate agent (connected to real backend)
+        async function activateAgent(agentId) {
+            const agent = agentsData.find(a => a.id === agentId);
+            if (!agent || agent.status !== 'idle') return;
+
+            try {
+                const response = await fetch(`/api/agents/${agentId}/activate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    addChatMessage(`🔄 Activating ${agent.name}...`, 'user');
+                    updateAgentStatus(agentId, 'active');
+
+                    setTimeout(() => {
+                        addChatMessage(`✅ ${agent.name} is now active and ready for tasks!`, 'assistant');
+                    }, 1500);
+                } else {
+                    addChatMessage(`❌ Failed to activate agent: ${result.error}`, 'assistant');
+                }
+            } catch (error) {
+                console.error('Error activating agent:', error);
+                addChatMessage(`❌ Network error while activating agent`, 'assistant');
+            }
+        }
+
+        // View agent details (connected to real backend)
+        async function viewDetails(agentId) {
+            try {
+                const response = await fetch(`/api/agents/${agentId}/details`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const agent = data.agent;
+                    const performance = data.performance;
+
+                    const premiumStatus = agent.premium ? 'Premium Claude Code Agent' : 'El Jefe Native Agent';
+                    const details = `
+                        📋 **Agent Details**
+
+                        **Name**: ${agent.name}
+                        **Type**: ${premiumStatus}
+                        **Specialization**: ${agent.specialization}
+                        **Model**: ${agent.model}
+                        **Status**: ${performance.current_status}
+
+                        **Performance Metrics**:
+                        • Total Jobs: ${performance.total_jobs}
+                        • Completed: ${performance.completed_jobs}
+                        • Currently Running: ${performance.running_jobs}
+                        • Success Rate: ${Math.round(performance.success_rate)}%
+
+                        **Focus Areas**: ${agent.focus_areas.join(', ')}
+                        **Tools Available**: ${agent.tools.length} tools
+                    `;
+
+                    addChatMessage(details, 'assistant');
+                } else {
+                    addChatMessage(`❌ Failed to get agent details: ${data.error}`, 'assistant');
+                }
+            } catch (error) {
+                console.error('Error getting agent details:', error);
+                addChatMessage(`❌ Network error while fetching agent details`, 'assistant');
+            }
+        }
+
+        // Load real activity feed
+        async function loadRealActivity() {
+            try {
+                const response = await fetch('/api/activity/real');
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update activity list with real data
+                    const activityList = document.getElementById('activity-list');
+                    activityList.innerHTML = '';
+
+                    data.activity.forEach(item => {
+                        const activityElement = createActivityElement(item);
+                        activityList.appendChild(activityElement);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading activity:', error);
+            }
+        }
+
+        // Workspace Manager Functions
+        let currentWorkspace = null;
+        let workspaceData = [];
+
+        // Toggle between views (Agents/Workspaces)
+        function showView(viewType) {
+            const agentsView = document.getElementById('agents-view');
+            const workspacesView = document.getElementById('workspaces-view');
+            const viewTitle = document.getElementById('view-title');
+            const navButtons = document.querySelectorAll('.nav-btn');
+
+            // Reset all nav buttons
+            navButtons.forEach(btn => btn.classList.remove('active'));
+
+            if (viewType === 'agents') {
+                agentsView.style.display = 'block';
+                workspacesView.style.display = 'none';
+                viewTitle.textContent = '🚀 Mission Control';
+                navButtons[0].classList.add('active'); // Agents button
+                loadRealAgentData();
+            } else if (viewType === 'workspaces') {
+                agentsView.style.display = 'none';
+                workspacesView.style.display = 'block';
+                viewTitle.textContent = '📁 Workspace Explorer';
+                navButtons[2].classList.add('active'); // Workspaces button
+                loadWorkspaces();
+            }
+        }
+
+        // Load workspaces from backend
+        async function loadWorkspaces() {
+            try {
+                showLoading('workspace-list');
+                const response = await fetch('/api/workspaces?limit=50');
+                const data = await response.json();
+
+                if (data.success) {
+                    workspaceData = data.workspaces;
+                    renderWorkspaces();
+                } else {
+                    showError('workspace-list', 'Failed to load workspaces');
+                }
+            } catch (error) {
+                console.error('Error loading workspaces:', error);
+                showError('workspace-list', 'Error loading workspaces');
+            }
+        }
+
+        // Render workspace list
+        function renderWorkspaces() {
+            const workspaceList = document.getElementById('workspace-list');
+
+            if (workspaceData.length === 0) {
+                workspaceList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📁</div>
+                        <p>No workspaces found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            workspaceList.innerHTML = workspaceData.map(workspace => `
+                <div class="workspace-card ${currentWorkspace === workspace.name ? 'active' : ''}"
+                     onclick="selectWorkspace('${workspace.name}')">
+                    <div class="workspace-card-header">
+                        <div class="workspace-name" title="${workspace.name}">
+                            ${workspace.name.length > 25 ? workspace.name.substring(0, 25) + '...' : workspace.name}
+                        </div>
+                        <div class="workspace-status status-${workspace.status}">
+                            ${workspace.status}
+                        </div>
+                    </div>
+                    <div class="workspace-description" title="${workspace.description || ''}">
+                        ${workspace.description || 'No description available'}
+                    </div>
+                    <div class="workspace-meta">
+                        <span>📁 ${workspace.file_count || 0} files</span>
+                        <span>📊 ${workspace.step_count || 0} steps</span>
+                        <span>🕐 ${formatDate(workspace.created_at)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Select a workspace
+        async function selectWorkspace(workspaceId) {
+            currentWorkspace = workspaceId;
+
+            // Update UI
+            renderWorkspaces();
+            document.getElementById('current-workspace-name').textContent =
+                workspaceData.find(w => w.name === workspaceId)?.name || workspaceId;
+
+            // Load workspace files
+            await loadWorkspaceFiles(workspaceId);
+        }
+
+        // Load files in a workspace
+        async function loadWorkspaceFiles(workspaceId) {
+            try {
+                showLoading('file-browser');
+                const response = await fetch(`/api/workspaces/${workspaceId}/files`);
+                const data = await response.json();
+
+                if (data.success) {
+                    renderFiles(data.files);
+                } else {
+                    showError('file-browser', 'Failed to load files');
+                }
+            } catch (error) {
+                console.error('Error loading files:', error);
+                showError('file-browser', 'Error loading files');
+            }
+        }
+
+        // Render file list
+        function renderFiles(files) {
+            const fileBrowser = document.getElementById('file-browser');
+
+            if (!files || files.length === 0) {
+                fileBrowser.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📄</div>
+                        <p>No files in this workspace</p>
+                    </div>
+                `;
+                return;
+            }
+
+            fileBrowser.innerHTML = files.map(file => `
+                <div class="file-item" onclick="previewFile('${file.name}')">
+                    <div class="file-icon">
+                        ${getFileIcon(file.type, file.name)}
+                    </div>
+                    <div class="file-info">
+                        <div class="file-name" title="${file.name}">
+                            ${file.name}
+                        </div>
+                        <div class="file-meta">
+                            <span class="file-size">${formatFileSize(file.size)}</span>
+                            <span>${file.type}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Preview file content
+        async function previewFile(filename) {
+            if (!currentWorkspace) return;
+
+            try {
+                showLoading('file-preview-content');
+                const response = await fetch(`/api/workspaces/${currentWorkspace}/files/${filename}`);
+
+                if (response.ok) {
+                    const contentType = response.headers.get('Content-Type');
+
+                    if (contentType && contentType.startsWith('image/')) {
+                        // Handle images
+                        const blob = await response.blob();
+                        const imageUrl = URL.createObjectURL(blob);
+                        document.getElementById('file-preview-content').innerHTML =
+                            `<img src="${imageUrl}" alt="${filename}" style="max-width: 100%; border-radius: 10px;">`;
+                    } else {
+                        // Handle text files
+                        const text = await response.text();
+                        document.getElementById('file-preview-content').innerHTML =
+                            `<pre style="white-space: pre-wrap; font-family: monospace; font-size: 0.9em; line-height: 1.5;">${escapeHtml(text)}</pre>`;
+                    }
+                } else {
+                    showError('file-preview-content', 'Failed to load file');
+                }
+            } catch (error) {
+                console.error('Error previewing file:', error);
+                showError('file-preview-content', 'Error loading file');
+            }
+        }
+
+        // Close file preview
+        function closePreview() {
+            document.getElementById('file-preview-content').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">👁️</div>
+                    <p>Select a file to preview</p>
+                </div>
+            `;
+        }
+
+        // Refresh files
+        function refreshFiles() {
+            if (currentWorkspace) {
+                loadWorkspaceFiles(currentWorkspace);
+            }
+        }
+
+        // Create new workspace
+        function createNewWorkspace() {
+            const name = prompt('Enter workspace name:');
+            if (!name) return;
+
+            const description = prompt('Enter workspace description (optional):') || '';
+
+            // This would create a new workspace via API
+            alert('Workspace creation will be implemented with backend API');
+        }
+
+        // Upload file to workspace
+        function uploadFile() {
+            if (!currentWorkspace) {
+                alert('Please select a workspace first');
+                return;
+            }
+
+            // This would open file upload dialog
+            alert('File upload will be implemented with backend API');
+        }
+
+        // Search/filter workspaces
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('workspace-search');
+            const statusFilter = document.getElementById('status-filter');
+
+            if (searchInput) {
+                searchInput.addEventListener('input', filterWorkspaces);
+            }
+
+            if (statusFilter) {
+                statusFilter.addEventListener('change', filterWorkspaces);
+            }
+        });
+
+        function filterWorkspaces() {
+            const searchTerm = document.getElementById('workspace-search').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+
+            let filtered = workspaceData;
+
+            if (searchTerm) {
+                filtered = filtered.filter(w =>
+                    w.name.toLowerCase().includes(searchTerm) ||
+                    (w.description && w.description.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            if (statusFilter) {
+                filtered = filtered.filter(w => w.status === statusFilter);
+            }
+
+            // Render filtered results
+            const workspaceList = document.getElementById('workspace-list');
+            if (filtered.length === 0) {
+                workspaceList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🔍</div>
+                        <p>No workspaces match your filters</p>
+                    </div>
+                `;
+            } else {
+                // Temporarily replace workspaceData for rendering
+                const originalData = workspaceData;
+                workspaceData = filtered;
+                renderWorkspaces();
+                workspaceData = originalData;
+            }
+        }
+
+        // Utility functions
+        function getFileIcon(type, name) {
+            if (type.startsWith('image/')) return '🖼️';
+            if (type.startsWith('video/')) return '🎥';
+            if (type.startsWith('audio/')) return '🎵';
+            if (type.includes('pdf')) return '📕';
+            if (type.includes('text') || name.endsWith('.md')) return '📄';
+            if (type.includes('json')) return '📊';
+            if (name.endsWith('.py') || name.endsWith('.js') || name.endsWith('.ts')) return '🐍';
+            if (name.endsWith('.html') || name.endsWith('.css')) return '🌐';
+            return '📄';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            } catch {
+                return 'Invalid date';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showLoading(elementId) {
+            document.getElementById(elementId).innerHTML =
+                '<div style="text-align: center; padding: 20px;">🔄 Loading...</div>';
+        }
+
+        function showError(elementId, message) {
+            document.getElementById(elementId).innerHTML =
+                `<div style="text-align: center; padding: 20px; color: var(--error);">❌ ${message}</div>`;
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeDashboard);
+    </script>
+</body>
+</html>

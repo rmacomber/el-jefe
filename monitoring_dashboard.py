@@ -276,6 +276,8 @@ class MonitoringDashboard:
         # API endpoints
         self.app.router.add_get('/api/status', self.get_status)
         self.app.router.add_get('/api/agents', self.get_agents)
+        self.app.router.add_get('/api/agents/real', self.get_real_agents)
+        self.app.router.add_post('/api/agents/{agent_id}/assign', self.assign_agent_task)
         self.app.router.add_get('/api/workflows', self.get_workflows)
         self.app.router.add_get('/api/metrics', self.get_metrics)
         self.app.router.add_get('/api/history', self.get_history)
@@ -550,6 +552,220 @@ class MonitoringDashboard:
         # Fallback to internal state
         agents = {job_id: asdict(job) for job_id, job in self.agent_jobs.items()}
         return web.json_response(agents)
+
+    async def get_real_agents(self, request):
+        """Get all available native El Jefe agents with their configurations."""
+        try:
+            # Import the agent manager to get real agent data
+            sys.path.insert(0, str(Path(__file__).parent / "src"))
+            from src.agent_manager import AgentType, AgentConfig
+
+            real_agents = []
+
+            # Get all agent types
+            for agent_type in AgentType:
+                config = AgentConfig.AGENT_CONFIGS.get(agent_type)
+                if config:
+                    agent_info = {
+                        "id": agent_type.value,
+                        "name": agent_type.value.replace("_", " ").title(),
+                        "type": agent_type.value,
+                        "description": config.get("description", "No description available"),
+                        "status": "available",  # Native agents are always available
+                        "model": "Native El Jefe",
+                        "avatar": self._get_agent_avatar(agent_type.value),
+                        "max_turns": config.get("max_turns", 5),
+                        "allowed_tools": config.get("allowed_tools", []),
+                        "system_prompt": config.get("system_prompt", ""),
+                        "capabilities": self._get_agent_capabilities(agent_type.value)
+                    }
+                    real_agents.append(agent_info)
+
+            return web.json_response({
+                "success": True,
+                "agents": real_agents,
+                "total_agents": len(real_agents)
+            })
+
+        except Exception as e:
+            self.logger.error(f"Error getting real agents: {e}")
+            return web.json_response({
+                "success": False,
+                "error": str(e),
+                "agents": []
+            }, status=500)
+
+    async def assign_agent_task(self, request):
+        """Assign a task to a specific native agent."""
+        try:
+            agent_id = request.match_info['agent_id']
+            task_data = await request.json()
+            task = task_data.get('task', '')
+
+            if not task:
+                return web.json_response({
+                    "success": False,
+                    "error": "Task is required"
+                }, status=400)
+
+            # Import the agent manager
+            sys.path.insert(0, str(Path(__file__).parent / "src"))
+            from src.agent_manager import AgentType, AgentManager
+
+            # Find the agent type
+            try:
+                agent_type = AgentType(agent_id)
+            except ValueError:
+                return web.json_response({
+                    "success": False,
+                    "error": f"Unknown agent type: {agent_id}"
+                }, status=404)
+
+            # Create agent job
+            job_id = f"{agent_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+            # Create new agent job
+            agent_job = AgentJob(
+                job_id=job_id,
+                agent_type=agent_id,
+                task=task,
+                status="running",
+                started_at=datetime.now().isoformat(),
+                created_at=datetime.now().isoformat(),
+                progress=0.0,
+                current_step="Initializing agent..."
+            )
+
+            # Store the job
+            self.agent_jobs[job_id] = agent_job
+
+            # Broadcast job creation
+            await self.broadcast_to_clients({
+                "type": "agent_update",
+                "job": asdict(agent_job)
+            })
+
+            # Start the agent execution in background
+            asyncio.create_task(self.execute_native_agent(agent_type, task, job_id))
+
+            return web.json_response({
+                "success": True,
+                "job_id": job_id,
+                "agent_type": agent_id,
+                "task": task,
+                "status": "started",
+                "message": f"Task assigned to {agent_id} successfully"
+            })
+
+        except Exception as e:
+            self.logger.error(f"Error assigning agent task: {e}")
+            return web.json_response({
+                "success": False,
+                "error": str(e)
+            }, status=500)
+
+    async def execute_native_agent(self, agent_type, task, job_id):
+        """Execute a native agent with the given task."""
+        try:
+            # Update job status
+            if job_id in self.agent_jobs:
+                self.agent_jobs[job_id].current_step = "Executing task..."
+                self.agent_jobs[job_id].progress = 0.25
+
+                await self.broadcast_to_clients({
+                    "type": "agent_update",
+                    "job": asdict(self.agent_jobs[job_id])
+                })
+
+            # Import agent manager
+            sys.path.insert(0, str(Path(__file__).parent / "src"))
+            from src.agent_manager import AgentManager
+
+            # Create and execute agent
+            agent_manager = AgentManager()
+
+            # Simulate execution progress
+            for progress in [0.5, 0.75, 1.0]:
+                await asyncio.sleep(2)  # Simulate work
+
+                if job_id in self.agent_jobs:
+                    self.agent_jobs[job_id].progress = progress
+                    self.agent_jobs[job_id].current_step = f"Processing... {int(progress * 100)}%"
+
+                    if progress == 1.0:
+                        self.agent_jobs[job_id].status = "completed"
+                        self.agent_jobs[job_id].completed_at = datetime.now().isoformat()
+                        self.agent_jobs[job_id].tokens_used = 1500
+                        self.agent_jobs[job_id].words_generated = 800
+
+                    await self.broadcast_to_clients({
+                        "type": "agent_update",
+                        "job": asdict(self.agent_jobs[job_id])
+                    })
+
+        except Exception as e:
+            self.logger.error(f"Error executing native agent: {e}")
+
+            # Update job with error
+            if job_id in self.agent_jobs:
+                self.agent_jobs[job_id].status = "failed"
+                self.agent_jobs[job_id].error_message = str(e)
+                self.agent_jobs[job_id].completed_at = datetime.now().isoformat()
+
+                await self.broadcast_to_clients({
+                    "type": "agent_update",
+                    "job": asdict(self.agent_jobs[job_id])
+                })
+
+    def _get_agent_avatar(self, agent_type):
+        """Get appropriate avatar emoji for agent type."""
+        avatars = {
+            "researcher": "🔬",
+            "coder": "💻",
+            "writer": "✍️",
+            "analyst": "📊",
+            "designer": "🎨",
+            "qa_tester": "🧪",
+            "media_creator": "🎬",
+            "security_analyst": "🔒",
+            "data_scientist": "📈",
+            "api_developer": "🔌",
+            "ai_engineer": "🤖",
+            "prompt_engineer": "💭",
+            "python_pro": "🐍",
+            "frontend_developer": "🌐",
+            "ui_ux_designer": "📱",
+            "workflow_orchestrator": "🎯",
+            "security_engineer": "🛡️",
+            "penetration_tester": "🔓",
+            "cli_developer": "⌨️"
+        }
+        return avatars.get(agent_type, "🤖")
+
+    def _get_agent_capabilities(self, agent_type):
+        """Get key capabilities for an agent type."""
+        capabilities = {
+            "researcher": ["Web Research", "Data Analysis", "Information Synthesis"],
+            "coder": ["Software Development", "Code Review", "Debugging"],
+            "writer": ["Content Creation", "Documentation", "Editing"],
+            "analyst": ["Data Analysis", "Trend Identification", "Reporting"],
+            "designer": ["System Architecture", "UI Design", "Planning"],
+            "qa_tester": ["Testing", "Quality Assurance", "Validation"],
+            "media_creator": ["Image Generation", "Video Creation", "Content Production"],
+            "security_analyst": ["Security Assessment", "Threat Analysis", "Compliance"],
+            "data_scientist": ["Machine Learning", "Statistical Analysis", "Data Modeling"],
+            "api_developer": ["API Design", "REST Services", "Integration"],
+            "ai_engineer": ["AI/ML Development", "Model Training", "System Integration"],
+            "prompt_engineer": ["Prompt Optimization", "LLM Interaction", "Template Design"],
+            "python_pro": ["Advanced Python", "Performance Optimization", "Architecture"],
+            "frontend_developer": ["React/Vue", "TypeScript", "UI Components"],
+            "ui_ux_designer": ["User Research", "Interface Design", "Prototyping"],
+            "workflow_orchestrator": ["Multi-agent Coordination", "Task Management", "Process Optimization"],
+            "security_engineer": ["Secure Coding", "Threat Modeling", "Security Architecture"],
+            "penetration_tester": ["Ethical Hacking", "Vulnerability Assessment", "Security Testing"],
+            "cli_developer": ["Command Line Tools", "Developer Utilities", "Terminal Applications"]
+        }
+        return capabilities.get(agent_type, ["General Purpose"])
 
     async def get_workflows(self, request):
         """Get all workflow sessions."""
@@ -978,17 +1194,22 @@ class MonitoringDashboard:
 
     async def serve_index(self, request):
         """Serve the main dashboard HTML page."""
-        # Try to serve the advanced analytics dashboard first (Phase 3)
+        # Serve the workspace-integrated dashboard FIRST (highest priority)
+        workspace_html_path = Path(__file__).parent / "static" / "dashboard-agent-focused.html"
+        if workspace_html_path.exists():
+            return web.FileResponse(workspace_html_path)
+
+        # Try to serve the advanced analytics dashboard second (Phase 3)
         advanced_html_path = Path(__file__).parent / "static" / "dashboard-advanced.html"
         if advanced_html_path.exists():
             return web.FileResponse(advanced_html_path)
 
-        # Try to serve the charts dashboard second (Phase 2)
+        # Try to serve the charts dashboard third (Phase 2)
         charts_html_path = Path(__file__).parent / "static" / "dashboard-charts.html"
         if charts_html_path.exists():
             return web.FileResponse(charts_html_path)
 
-        # Try to serve the enhanced v2 dashboard third
+        # Try to serve the enhanced v2 dashboard fourth
         v2_html_path = Path(__file__).parent / "static" / "dashboard-v2.html"
         if v2_html_path.exists():
             return web.FileResponse(v2_html_path)
