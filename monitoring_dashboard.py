@@ -58,15 +58,27 @@ class AgentJob:
     error_message: Optional[str] = None
     tokens_used: int = 0
     words_generated: int = 0
+    # Additional fields for workflow tracking
+    created_at: Optional[str] = None
+    workflow_id: Optional[str] = None
+    session_id: Optional[str] = None
+
+    def __post_init__(self):
+        # Use created_at as started_at if started_at not provided but created_at is
+        if self.created_at and not self.started_at:
+            self.started_at = self.created_at
+        # Use started_at as created_at if created_at not provided but started_at is
+        elif self.started_at and not self.created_at:
+            self.created_at = self.started_at
 
 
 @dataclass
 class WorkflowSession:
     """Represents a complete workflow session."""
     session_id: str
-    goal: str
-    status: str
-    started_at: str
+    goal: str = ""
+    status: str = "initializing"
+    started_at: str = ""
     completed_at: Optional[str] = None
     total_steps: int = 0
     completed_steps: int = 0
@@ -75,11 +87,33 @@ class WorkflowSession:
     workspace: str = ""
     metrics: Dict[str, Any] = None
 
+    # New fields that were missing
+    workflow_type: str = ""
+    parameters: Dict[str, Any] = None
+    priority: str = "normal"
+    deadline: Optional[str] = None
+    created_at: Optional[str] = None
+    agents_assigned: List[str] = None
+
     def __post_init__(self):
         if self.agents_used is None:
             self.agents_used = []
         if self.metrics is None:
             self.metrics = {}
+        if self.parameters is None:
+            self.parameters = {}
+        if self.agents_assigned is None:
+            self.agents_assigned = []
+
+        # Set started_at to created_at if started_at is not provided
+        if not self.started_at and self.created_at:
+            self.started_at = self.created_at
+        elif not self.started_at:
+            self.started_at = datetime.now().isoformat()
+
+        # Set created_at if not provided
+        if not self.created_at:
+            self.created_at = datetime.now().isoformat()
 
 
 @dataclass
@@ -90,6 +124,9 @@ class ChatMessage:
     content: str
     timestamp: str
     message_type: str = "text"  # "text", "status", "error", "system"
+    # Additional fields for enhanced chat functionality
+    session_id: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class MonitoringDashboard:
@@ -2179,7 +2216,9 @@ Just tell me what you'd like to accomplish!"""
                     agent_job = AgentJob(
                         job_id=f"{agent_type}_{session_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
                         agent_type=agent_type,
+                        task=f"Execute {agent_type} in workflow {workflow_id}",
                         status="running",
+                        started_at=datetime.now().isoformat(),
                         created_at=datetime.now().isoformat(),
                         workflow_id=workflow_id,
                         session_id=session_id
@@ -2232,16 +2271,18 @@ Just tell me what you'd like to accomplish!"""
                 self.chat_messages.append(completion_message)
 
                 # Find associated chat session
+                found_session_id = None
                 for sid, session_data in self.chat_sessions.items():
                     if session_data.get("workflow_id") == session_id:
                         session_data["messages"].append(asdict(completion_message))
                         session_data["status"] = "completed"
+                        found_session_id = sid
                         break
 
                 await self.broadcast_to_clients({
                     "type": "chat_message",
                     "message": asdict(completion_message),
-                    "session_id": sid
+                    "session_id": found_session_id or session_id
                 })
 
         except Exception as e:
