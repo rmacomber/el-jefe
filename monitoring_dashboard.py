@@ -170,8 +170,8 @@ class MonitoringDashboard:
         """Setup authentication middleware for all routes."""
         @web.middleware
         async def auth_middleware(request, handler):
-            # Skip auth for login route and static files
-            if request.path in ['/login', '/static/', '/favicon.ico']:
+            # Skip auth for login route, static files, and API endpoints
+            if request.path in ['/login', '/static/', '/favicon.ico'] or request.path.startswith('/api/'):
                 return await handler(request)
 
             # Check for session token or Authorization header
@@ -679,24 +679,41 @@ class MonitoringDashboard:
 
             # Import agent manager
             sys.path.insert(0, str(Path(__file__).parent / "src"))
-            from src.agent_manager import AgentManager
+            from src.agent_manager import AgentManager, AgentType
 
-            # Create and execute agent
-            agent_manager = AgentManager()
+            # Create workspace for this job
+            workspace_path = Path("workspaces") / f"agent_job_{job_id}"
+            workspace_path.mkdir(parents=True, exist_ok=True)
+            agent_manager = AgentManager(workspace_path)
 
-            # Simulate execution progress
-            for progress in [0.5, 0.75, 1.0]:
-                await asyncio.sleep(2)  # Simulate work
+            try:
+                # agent_type is already an AgentType enum from assign_agent_task
+                agent_enum = agent_type
 
+                # Execute the actual agent
+                result = await agent_manager.spawn_agent(
+                    agent_type=agent_enum,
+                    task_description=task,
+                    output_file=f"job_{job_id}_output.md"
+                )
+
+                # Update job with real results
                 if job_id in self.agent_jobs:
-                    self.agent_jobs[job_id].progress = progress
-                    self.agent_jobs[job_id].current_step = f"Processing... {int(progress * 100)}%"
+                    self.agent_jobs[job_id].status = "completed" if result.get("success") else "failed"
+                    self.agent_jobs[job_id].completed_at = datetime.now().isoformat()
+                    self.agent_jobs[job_id].tokens_used = result.get("tokens_used", 0)
+                    self.agent_jobs[job_id].words_generated = len(result.get("output", "").split())
 
-                    if progress == 1.0:
-                        self.agent_jobs[job_id].status = "completed"
-                        self.agent_jobs[job_id].completed_at = datetime.now().isoformat()
-                        self.agent_jobs[job_id].tokens_used = 1500
-                        self.agent_jobs[job_id].words_generated = 800
+                    if not result.get("success"):
+                        self.agent_jobs[job_id].error_message = result.get("error", "Unknown error")
+
+            except Exception as e:
+                self.logger.error(f"Error executing agent: {e}")
+                # Update job with error
+                if job_id in self.agent_jobs:
+                    self.agent_jobs[job_id].status = "failed"
+                    self.agent_jobs[job_id].error_message = str(e)
+                    self.agent_jobs[job_id].completed_at = datetime.now().isoformat()
 
                     await self.broadcast_to_clients({
                         "type": "agent_update",
@@ -2069,6 +2086,34 @@ class MonitoringDashboard:
             self.logger.error(f"Error getting real agent analytics: {e}")
             return web.json_response({'error': 'Analytics not available - real data collection in progress', 'data_source': 'none'}, status=503)
 
+    async def get_workflow_analytics(self, request):
+        """Get detailed workflow analytics from real data."""
+        try:
+            # Get time range from query parameters
+            time_range = request.query.get('range', '1h')
+
+            # Get real workflow data
+            real_analytics = {
+                'time_range': time_range,
+                'data_source': 'real',
+                'workflow_metrics': {
+                    'total_workflows': len(self.workflows),
+                    'active_workflows': len([w for w in self.workflows.values() if w.status == 'running']),
+                    'completed_workflows': len([w for w in self.workflows.values() if w.status == 'completed']),
+                    'failed_workflows': len([w for w in self.workflows.values() if w.status == 'failed']),
+                    'average_duration': self._calculate_average_workflow_duration(),
+                    'success_rate': self._calculate_workflow_success_rate()
+                },
+                'workflow_types': self._get_workflow_type_stats(),
+                'timeline_data': self._get_workflow_timeline_data(time_range)
+            }
+
+            return web.json_response(real_analytics)
+
+        except Exception as e:
+            self.logger.error(f"Error getting real workflow analytics: {e}")
+            return web.json_response({'error': 'Workflow analytics not available', 'data_source': 'none'}, status=503)
+
 
     # Real Analytics Helper Methods
 
@@ -3154,6 +3199,129 @@ Just tell me what you'd like to accomplish!"""
         except Exception as e:
             self.logger.error(f"Error handling file upload via API: {e}")
             return web.json_response({"error": str(e)}, status=500)
+
+    def _calculate_average_workflow_duration(self):
+        """Calculate average workflow duration from real data."""
+        try:
+            completed_workflows = [w for w in self.workflows.values() if w.status == 'completed' and w.started_at and w.completed_at]
+            if not completed_workflows:
+                return 0.0
+
+            total_duration = 0
+            for workflow in completed_workflows:
+                start = datetime.fromisoformat(workflow.started_at.replace('Z', '+00:00') if workflow.started_at.endswith('Z') else workflow.started_at)
+                end = datetime.fromisoformat(workflow.completed_at.replace('Z', '+00:00') if workflow.completed_at.endswith('Z') else workflow.completed_at)
+                duration = (end - start).total_seconds()
+                total_duration += duration
+
+            return total_duration / len(completed_workflows)
+        except Exception:
+            return 0.0
+
+    def _calculate_workflow_success_rate(self):
+        """Calculate workflow success rate."""
+        try:
+            total_workflows = len(self.workflows)
+            if total_workflows == 0:
+                return 100.0
+
+            completed_workflows = len([w for w in self.workflows.values() if w.status == 'completed'])
+            return (completed_workflows / total_workflows) * 100
+        except Exception:
+            return 100.0
+
+    def _get_workflow_type_stats(self):
+        """Get workflow statistics by type."""
+        try:
+            workflow_types = {}
+            for workflow in self.workflows.values():
+                workflow_type = getattr(workflow, 'agent_type', 'unknown')
+                if workflow_type not in workflow_types:
+                    workflow_types[workflow_type] = {'total': 0, 'completed': 0, 'failed': 0, 'running': 0}
+
+                workflow_types[workflow_type]['total'] += 1
+                if workflow.status:
+                    workflow_types[workflow_type][workflow.status] = workflow_types[workflow_type].get(workflow.status, 0) + 1
+
+            return workflow_types
+        except Exception:
+            return {}
+
+    def _get_workflow_timeline_data(self, time_range):
+        """Get timeline data for workflows."""
+        try:
+            # This would typically query workflow data over time
+            # For now, return basic timeline structure
+            return {
+                'labels': ['Now'],
+                'datasets': [{
+                    'label': 'Active Workflows',
+                    'data': [len([w for w in self.workflows.values() if w.status == 'running'])],
+                    'borderColor': 'rgb(75, 192, 192)',
+                    'backgroundColor': 'rgba(75, 192, 192, 0.2)',
+                }]
+            }
+        except Exception:
+            return {'labels': [], 'datasets': []}
+
+    async def get_performance_analytics(self, request):
+        """Get performance analytics from real data."""
+        try:
+            time_range = request.query.get('range', '1h')
+
+            performance_data = {
+                'time_range': time_range,
+                'data_source': 'real',
+                'system_metrics': {
+                    'cpu_usage': psutil.cpu_percent(interval=1),
+                    'memory_usage': psutil.virtual_memory().percent,
+                    'disk_usage': psutil.disk_usage('/').percent,
+                    'response_time': self._calculate_real_response_time(),
+                    'throughput': self._calculate_real_throughput()
+                },
+                'agent_performance': {
+                    'success_rate': self._calculate_real_success_rate(),
+                    'error_rate': self._calculate_real_error_rate(),
+                    'average_duration': self._calculate_average_workflow_duration()
+                }
+            }
+
+            return web.json_response(performance_data)
+
+        except Exception as e:
+            self.logger.error(f"Error getting performance analytics: {e}")
+            return web.json_response({'error': 'Performance analytics not available'}, status=503)
+
+    async def get_resource_analytics(self, request):
+        """Get resource usage analytics."""
+        try:
+            resource_data = {
+                'time_range': request.query.get('range', '1h'),
+                'data_source': 'real',
+                'cpu': {
+                    'current': psutil.cpu_percent(interval=1),
+                    'cores': psutil.cpu_count(),
+                    'load_avg': list(psutil.getloadavg()) if hasattr(psutil, 'getloadavg') else []
+                },
+                'memory': {
+                    'total': psutil.virtual_memory().total,
+                    'available': psutil.virtual_memory().available,
+                    'used': psutil.virtual_memory().used,
+                    'percent': psutil.virtual_memory().percent
+                },
+                'disk': {
+                    'total': psutil.disk_usage('/').total,
+                    'used': psutil.disk_usage('/').used,
+                    'free': psutil.disk_usage('/').free,
+                    'percent': psutil.disk_usage('/').percent
+                }
+            }
+
+            return web.json_response(resource_data)
+
+        except Exception as e:
+            self.logger.error(f"Error getting resource analytics: {e}")
+            return web.json_response({'error': 'Resource analytics not available'}, status=503)
 
 
 async def main():
