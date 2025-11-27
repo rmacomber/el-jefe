@@ -418,6 +418,75 @@ python monitoring_dashboard.py --dev
 - Use parameterized queries
 - Keep dependencies updated
 
+## 🚫 **CRITICAL: NO FAKE DATA POLICY**
+
+### **ABSOLUTE PROHIBITION**
+This project operates under a **ZERO FAKE DATA POLICY**. **NEVER** use fake, sample, mock, demo, or simulated data under any circumstances when:
+
+- **Designing new features**
+- **Building functionality**
+- **Creating API endpoints**
+- **Developing analytics**
+- **Writing dashboard components**
+- **Implementing data visualization**
+- **Adding monitoring metrics**
+- **Creating test data** (use real test scenarios instead)
+
+### **REAL DATA REQUIREMENTS**
+✅ **ALWAYS USE REAL DATA:**
+- Real system metrics (CPU, memory, disk via `psutil`)
+- Real agent statistics from agent manager
+- Real workflow execution data
+- Real user activity and interactions
+- Real API responses and error conditions
+- Real database queries and results
+- Real network latency and performance metrics
+
+### **HONEST EMPTY STATES**
+When no real data exists:
+- ✅ **Show empty states** with clear messages
+- ✅ **Display "No data available"** appropriately
+- ✅ **Use loading indicators** for data in progress
+- ❌ **NEVER fall back to fake/sample data**
+- ❌ **NEVER use hardcoded mock statistics**
+- ❌ **NEVER simulate activity or metrics**
+
+### **DATA SOURCES**
+- **System Metrics**: Use `psutil`, `os`, `sys` modules
+- **Application State**: Use actual application objects and databases
+- **Agent Data**: Use real agent manager and workflow systems
+- **User Activity**: Track real WebSocket connections and API calls
+- **Performance**: Measure actual response times and resource usage
+
+### **IMPLEMENTATION GUIDELINES**
+```python
+# ❌ NEVER DO THIS - FAKE DATA
+analytics = {
+    'success_rate': 98.5,  # Fake hardcoded value
+    'cpu_usage': 45.2,     # Mock random data
+    'active_users': 142     # Simulated metric
+}
+
+# ✅ ALWAYS DO THIS - REAL DATA
+import psutil
+analytics = {
+    'success_rate': calculate_real_success_rate(),
+    'cpu_usage': psutil.cpu_percent(interval=1),
+    'active_users': len(active_connections)
+}
+```
+
+### **ENFORCEMENT**
+This policy is **strictly enforced** through:
+- Code reviews that reject any fake data implementation
+- Automated testing that validates real data sources
+- Git hooks that scan for fake data patterns
+- Documentation requirements for all data sources
+
+**VIOLATIONS of this policy will result in immediate rejection of pull requests and removal of fake data code.**
+
+The El Jefe dashboard maintains **100% data integrity** - users see only real, authentic system information.
+
 ## Integration with Claude Code
 
 This project is optimized for Claude Code with specialized commands:
