@@ -475,6 +475,36 @@
             transform: scale(1.05);
         }
 
+        /* Chat Toggle Button */
+        #chat-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        #chat-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        #chat-toggle:active {
+            transform: scale(0.95);
+        }
+
         /* Activity Feed */
         .activity-feed {
             background: var(--glass-bg);
@@ -628,6 +658,17 @@
 
             .send-btn:active {
                 transform: scale(0.95);
+            }
+
+            /* Chat Toggle Mobile Improvements */
+            #chat-toggle {
+                width: 50px !important;
+                height: 50px !important;
+                font-size: 24px !important;
+                top: 10px !important;
+                right: 10px !important;
+                -webkit-tap-highlight-color: transparent;
+                touch-action: manipulation;
             }
 
             .overview-metrics {
@@ -1419,182 +1460,15 @@
         // Real Claude Code + El Jefe agents data - will be loaded from backend
         let agentsData = [];
 
-        // Load real agent data on initialization
-            {
-                id: 'prompt-engineer',
-                name: 'Prompt Engineer',
-                type: 'Prompt Optimization',
-                status: 'active',
-                avatar: '📝',
-                model: 'Opus',
-                tasksCompleted: 98,
-                successRate: 99.2,
-                avgResponseTime: '1.8s',
-                currentProgress: 80,
-                currentTask: 'Optimizing system prompts for code generation workflows',
-                premium: true,
-                specialization: 'Prompt Design & Optimization'
-            },
-            {
-                id: 'python-pro',
-                name: 'Python Pro',
-                type: 'Python Development',
-                status: 'active',
-                avatar: '🐍',
-                model: 'Sonnet',
-                tasksCompleted: 176,
-                successRate: 97.8,
-                avgResponseTime: '1.4s',
-                currentProgress: 45,
-                currentTask: 'Implementing async data processing pipeline with performance optimization',
-                premium: true,
-                specialization: 'Advanced Python & Performance'
-            },
-            {
-                id: 'frontend-developer',
-                name: 'Frontend Developer',
-                type: 'React Development',
-                status: 'active',
-                avatar: '⚛️',
-                model: 'Sonnet',
-                tasksCompleted: 124,
-                successRate: 96.9,
-                avgResponseTime: '1.6s',
-                currentProgress: 70,
-                currentTask: 'Building responsive dashboard components with TypeScript',
-                premium: true,
-                specialization: 'React & Modern Frontend'
-            },
-            {
-                id: 'ui-ux-designer',
-                name: 'UI/UX Designer',
-                type: 'Design Systems',
-                status: 'idle',
-                avatar: '🎨',
-                model: 'Sonnet',
-                tasksCompleted: 87,
-                successRate: 98.1,
-                avgResponseTime: '2.1s',
-                currentProgress: 0,
-                currentTask: 'Available for next design assignment',
-                premium: true,
-                specialization: 'User Interface & Experience Design'
-            },
-            // El Jefe Native Agents
-            {
-                id: 'eljefe_security-analyst',
-                name: 'Security Guardian',
-                type: 'Security Analysis',
-                status: 'active',
-                avatar: '🛡️',
-                model: 'Sonnet',
-                tasksCompleted: 45,
-                successRate: 99,
-                avgResponseTime: '2.1s',
-                currentProgress: 75,
-                currentTask: 'Vulnerability assessment on API endpoints',
-                premium: false,
-                specialization: 'Security & Vulnerability Assessment'
-            },
-            {
-                id: 'eljefe_coder',
-                name: 'Code Master',
-                type: 'Software Development',
-                status: 'active',
-                avatar: '💻',
-                model: 'Sonnet',
-                tasksCompleted: 89,
-                successRate: 97,
-                avgResponseTime: '1.5s',
-                currentProgress: 40,
-                currentTask: 'Implementing user authentication module',
-                premium: false,
-                specialization: 'General Software Development'
-            },
-            {
-                id: 'eljefe_qa_tester',
-                name: 'Bug Hunter',
-                type: 'Testing & QA',
-                status: 'idle',
-                avatar: '🔍',
-                model: 'Sonnet',
-                tasksCompleted: 67,
-                successRate: 95,
-                avgResponseTime: '1.8s',
-                currentProgress: 0,
-                currentTask: 'Waiting for next assignment',
-                premium: false,
-                specialization: 'Quality Assurance & Testing'
-            },
-            {
-                id: 'eljefe_writer',
-                name: 'Doc Smith',
-                type: 'Documentation',
-                status: 'active',
-                avatar: '📄',
-                model: 'Sonnet',
-                tasksCompleted: 34,
-                successRate: 98,
-                avgResponseTime: '2.3s',
-                currentProgress: 90,
-                currentTask: 'Creating API documentation for v2.0',
-                premium: false,
-                specialization: 'Technical Writing & Documentation'
-            },
-            {
-                id: 'eljefe_researcher',
-                name: 'Data Miner',
-                type: 'Research & Analysis',
-                status: 'offline',
-                avatar: '🔬',
-                model: 'Sonnet',
-                tasksCompleted: 28,
-                successRate: 96,
-                avgResponseTime: '3.1s',
-                currentProgress: 0,
-                currentTask: 'Offline - Scheduled maintenance',
-                premium: false,
-                specialization: 'Research & Information Gathering'
-            }
-        ];
+        // Load real agent data from backend API
 
-        // Sample activity data
-        const activityData = [
-            {
-                type: 'success',
-                icon: '✅',
-                text: 'Security Guardian completed vulnerability assessment',
-                time: '2 minutes ago'
-            },
-            {
-                type: 'warning',
-                icon: '⚠️',
-                text: 'Code Master encountered merge conflicts in feature branch',
-                time: '5 minutes ago'
-            },
-            {
-                type: 'success',
-                icon: '🚀',
-                text: 'New workflow initiated: Client Onboarding Process',
-                time: '8 minutes ago'
-            },
-            {
-                type: 'success',
-                icon: '📝',
-                text: 'Doc Smith published API documentation v2.0',
-                time: '12 minutes ago'
-            },
-            {
-                type: 'error',
-                icon: '❌',
-                text: 'Data Miner failed to connect to research database',
-                time: '15 minutes ago'
-            }
-        ];
+        // Activity data will be populated from real WebSocket events
+        let activityData = [];
 
         // Initialize dashboard
         function initializeDashboard() {
-            renderAgents();
+            // Load real agent data first, then render
+            loadRealAgentData();
             renderActivity();
             startRealTimeUpdates();
 
@@ -1976,8 +1850,8 @@
                 }
             } catch (error) {
                 console.error('Error loading agent data:', error);
-                // Fallback to sample data if API is not available
-                addChatMessage('⚠️ Using demo data - real backend not connected', 'assistant');
+                addChatMessage('❌ Failed to connect to agent backend. Please check connection.', 'assistant');
+                // Don't use fake data - show empty state until real data loads
             }
         }
 
