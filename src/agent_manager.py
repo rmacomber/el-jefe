@@ -17,10 +17,17 @@ from claude_agent_sdk import query, ClaudeAgentOptions
 
 # Import MCP tools for agent enhancement
 try:
-    from .mcp_integration import get_mcp_integration
+    from .mcp_integration import get_mcp_integration, get_mcp_tool_definitions
     MCP_TOOLS_AVAILABLE = True
 except ImportError:
     MCP_TOOLS_AVAILABLE = False
+
+# Import Playwright web researcher
+try:
+    from .playwright_web_researcher import PlaywrightWebResearcher
+    PLAYWRIGHT_RESEARCHER_AVAILABLE = True
+except ImportError:
+    PLAYWRIGHT_RESEARCHER_AVAILABLE = False
 
 
 class AgentType(Enum):
@@ -32,6 +39,7 @@ class AgentType(Enum):
     DESIGNER = "designer"
     QA_TESTER = "qa_tester"
     MEDIA_CREATOR = "media_creator"
+    WEB_RESEARCHER = "web_researcher"
     # Template-based agents
     SECURITY_ANALYST = "security_analyst"
     DATA_SCIENTIST = "data_scientist"
@@ -94,6 +102,12 @@ class AgentConfig:
             "allowed_tools": ["generate_image", "generate_video", "save_media", "write_md", "read_files", "web_search_prime", "web_fetch"],
             "max_turns": 8,
             "description": "Creates images and videos using AI generation models"
+        },
+        AgentType.WEB_RESEARCHER: {
+            "system_prompt": "You are a Web Researcher specializing in automated web research and content extraction using Playwright browser automation. Your expertise includes navigating websites, extracting relevant content, capturing screenshots, and generating comprehensive research reports. You can access any website, handle dynamic content, and organize research findings effectively. Use your browser automation capabilities to gather current information from multiple sources and present it in well-structured reports with visual evidence.",
+            "allowed_tools": ["playwright_navigate", "playwright_screenshot", "playwright_click", "playwright_fill", "playwright_get_content", "web_search_prime", "search_web", "write_md", "read_files", "analyze_image"],
+            "max_turns": 10,
+            "description": "Automated web research specialist with Playwright browser automation"
         },
         AgentType.SECURITY_ANALYST: {
             "system_prompt": "You are a Security Analyst specializing in application security, vulnerability assessment, and security best practices. Your core expertise areas include threat assessment, security implementation, compliance standards, and security testing. Always provide specific, actionable security recommendations with code examples when possible.",
@@ -188,23 +202,39 @@ class AgentConfig:
         # Add MCP tools if available
         if MCP_TOOLS_AVAILABLE:
             try:
-                mcp_integration = get_mcp_integration()
-                mcp_tools = mcp_integration.get_available_tools()
+                mcp_tool_definitions = get_mcp_tool_definitions()
 
-                if mcp_tools:
-                    # Add MCP tools to allowed_tools
+                if mcp_tool_definitions:
+                    # Add MCP tool definitions to config
+                    config["mcp_tool_definitions"] = mcp_tool_definitions
+
+                    # Also add tool names for compatibility
+                    mcp_tool_names = [tool["name"] for tool in mcp_tool_definitions]
                     base_tools = config.get("allowed_tools", [])
-                    enhanced_tools = list(set(base_tools + mcp_tools))
+                    enhanced_tools = list(set(base_tools + mcp_tool_names))
                     config["allowed_tools"] = enhanced_tools
 
                     # Update system prompt to mention MCP capabilities
                     mcp_prompt = "\n\nYou also have access to powerful MCP (Model Context Protocol) tools:\n"
+                    mcp_prompt += "\n🧠 Memory & Knowledge Tools:\n"
                     mcp_prompt += "- memory_create_entity: Create entities in a knowledge graph\n"
                     mcp_prompt += "- memory_create_relation: Create relations between entities\n"
                     mcp_prompt += "- memory_search: Search the knowledge graph\n"
                     mcp_prompt += "- memory_add_observations: Add observations to entities\n"
+                    mcp_prompt += "\n📚 Documentation & Research Tools:\n"
                     mcp_prompt += "- context7_resolve_library: Find library documentation\n"
                     mcp_prompt += "- context7_get_docs: Get up-to-date library documentation\n"
+                    mcp_prompt += "- search_web: Search the web for current information\n"
+                    mcp_prompt += "- web_search_prime: Advanced web search with filtering options\n"
+                    mcp_prompt += "- web_fetch: Read and convert web content from URLs\n"
+                    mcp_prompt += "\n👁️ Vision & Media Analysis Tools:\n"
+                    mcp_prompt += "- analyze_image: Analyze images with AI vision\n"
+                    mcp_prompt += "- analyze_video: Analyze videos with AI vision\n"
+                    mcp_prompt += "\n🌐 Browser Automation Tools:\n"
+                    mcp_prompt += "- navigate_to_url/browser_navigate: Navigate to websites\n"
+                    mcp_prompt += "- take_screenshot/browser_screenshot: Capture screenshots\n"
+                    mcp_prompt += "- click_element/browser_click: Click elements on pages\n"
+                    mcp_prompt += "- fill_input/browser_fill: Fill form fields\n"
                     mcp_prompt += "\nUse these tools when relevant to enhance your capabilities and provide better results."
 
                     config["system_prompt"] += mcp_prompt
@@ -265,11 +295,23 @@ class AgentManager:
         # Build the full prompt
         full_prompt = self._build_prompt(task_description, context, custom_instructions)
 
-        # Configure agent options
+        # Configure agent options with explicit tool permissions
+        # For researcher and web_researcher agents, explicitly enable web search and browser tools
+        allowed_tools = config["allowed_tools"]
+        if agent_type == AgentType.RESEARCHER:
+            # Ensure web search tools are enabled for researcher agents
+            web_tools = ["web_search", "search_web", "web_fetch"]
+            allowed_tools = list(set(allowed_tools + web_tools))
+        elif agent_type == AgentType.WEB_RESEARCHER:
+            # Ensure browser automation tools are enabled for web researcher agents
+            browser_tools = ["playwright_navigate", "playwright_screenshot", "playwright_click", "playwright_fill", "playwright_get_content", "playwright_select", "playwright_hover", "web_search_prime", "search_web", "web_fetch"]
+            allowed_tools = list(set(allowed_tools + browser_tools))
+
         options = ClaudeAgentOptions(
             system_prompt=config["system_prompt"],
-            allowed_tools=config["allowed_tools"],
-            max_turns=config["max_turns"]
+            allowed_tools=allowed_tools,
+            max_turns=config["max_turns"],
+            permission_mode="bypassPermissions"  # This bypasses all tool permission restrictions
         )
 
         # Execute agent
@@ -284,16 +326,56 @@ class AgentManager:
         self.active_agents[agent_id] = agent_result
 
         try:
-            # Run the agent
-            results = []
-            async for message in query(prompt=full_prompt, options=options):
-                for block in getattr(message, 'content', []):
-                    # Check if it's a TextBlock and extract text
-                    if hasattr(block, 'text'):
-                        results.append(block.text)
+            # Special handling for WEB_RESEARCHER agent type
+            if agent_type == AgentType.WEB_RESEARCHER and PLAYWRIGHT_RESEARCHER_AVAILABLE:
+                # Use PlaywrightWebResearcher for web research tasks
+                print(f"🌐 Using PlaywrightWebResearcher for {agent_type.value} agent")
+
+                # Extract research topic from task description
+                research_topic = task_description.strip()
+
+                # Create workspace for web research
+                web_research_workspace = self.workspace_path / f"{agent_id}_web_research"
+                web_research_workspace.mkdir(exist_ok=True)
+
+                # Initialize PlaywrightWebResearcher
+                web_researcher = PlaywrightWebResearcher(web_research_workspace)
+
+                # Execute web research
+                research_results = await web_researcher.research_topic(research_topic, max_sources=5)
+
+                # Convert research results to text format
+                results_text = f"Web Research Results for: {research_topic}\n"
+                results_text += f"Research conducted at: {research_results['timestamp']}\n"
+                results_text += f"Sources analyzed: {research_results['sources_analyzed']}\n\n"
+
+                results_text += "KEY FINDINGS:\n"
+                for i, finding in enumerate(research_results['findings'], 1):
+                    results_text += f"{i}. {finding}\n"
+
+                results_text += f"\nSCREENSHOTS TAKEN: {len(research_results['screenshots'])}\n"
+                for screenshot in research_results['screenshots']:
+                    results_text += f"- {screenshot}\n"
+
+                if research_results['errors']:
+                    results_text += f"\nERRORS ENCOUNTERED:\n"
+                    for error in research_results['errors']:
+                        results_text += f"- {error}\n"
+
+                results = [results_text]  # Store as single result for compatibility
+
+            else:
+                # Run standard Claude agent for all other types
+                results = []
+                async for message in query(prompt=full_prompt, options=options):
+                    for block in getattr(message, 'content', []):
+                        # Check if it's a TextBlock and extract text
+                        if hasattr(block, 'text'):
+                            results.append(block.text)
+
+                results_text = "\n".join(results)
 
             # Save results
-            results_text = "\n".join(results)
             await self._save_agent_output(agent_id, results_text, output_file)
 
             # Update agent result

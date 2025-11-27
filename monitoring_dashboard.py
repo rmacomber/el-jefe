@@ -611,6 +611,7 @@ class MonitoringDashboard:
             # Import the agent manager
             sys.path.insert(0, str(Path(__file__).parent / "src"))
             from src.agent_manager import AgentType, AgentManager
+            from src.playwright_web_researcher import PlaywrightWebResearcher
 
             # Find the agent type
             try:
